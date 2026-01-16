@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bom dia, meu bem</title>
+    <style>
+        /* TEMA LILÁS ESCURO ORIGINAL */
+        body {
+            background-color: #1a1625; 
+            color: #e0d7ff;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .container {
+            background: #2d273f;
+            padding: 30px;
+            border-radius: 25px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            border: 1px solid #4a3f6b;
+            max-width: 350px;
+            width: 90%;
+        }
+
+        h1 { color: #bb86fc; font-size: 1.6rem; margin-bottom: 10px; }
+        p { font-size: 0.95rem; color: #b3a9d8; }
+
+        /* BATERIA */
+        .bateria-box {
+            border: 3px solid #4a3f6b;
+            width: 80px;
+            height: 35px;
+            margin: 20px auto;
+            border-radius: 8px;
+            position: relative;
+            padding: 4px;
+        }
+
+        .bateria-box::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: 10px;
+            width: 5px;
+            height: 15px;
+            background: #4a3f6b;
+            border-radius: 0 2px 2px 0;
+        }
+
+        #nivel {
+            background: linear-gradient(90deg, #bb86fc, #d4b3ff);
+            width: 20%;
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.8s ease;
+        }
+
+        /* BLOCOS DE DIÁLOGO */
+        #area-dialogo {
+            margin: 15px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 80px; /* Garante espaço para as mensagens */
+        }
+
+        .bloco-msg {
+            background: rgba(187, 134, 252, 0.1);
+            border: 1px solid rgba(187, 134, 252, 0.2);
+            padding: 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            text-align: left;
+            animation: slideIn 0.3s ease-out forwards;
+            color: #e0d7ff;
+        }
+
+        .bloco-especial {
+            border-color: #ff79c6;
+            background: rgba(255, 121, 198, 0.1);
+            color: #ffb8e0;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* DESIGN ORIGINAL DOS CARDS */
+        .card-cuidados {
+            text-align: left;
+            background: #241e35;
+            padding: 15px;
+            border-radius: 15px;
+            margin-top: 10px;
+            border-left: 4px solid #bb86fc;
+        }
+
+        .item { margin-bottom: 8px; display: block; }
+
+        button {
+            background: #bb86fc;
+            color: #1a1625;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s, background 0.3s;
+            width: 100%;
+        }
+
+        button:hover { background: #d4b3ff; transform: scale(1.02); }
+        button:active { transform: scale(0.98); }
+
+        .coracao { color: #ff79c6; animation: pulsar 1.5s infinite; display: inline-block; }
+        @keyframes pulsar { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <span style="font-size: 40px;">🌙</span>
+        <h1>Repouso Concluído?</h1>
+        <p>Espero que o sono tenha deletado aquela dor de cabeça chata.</p>
+
+        <div class="bateria-box">
+            <div id="nivel"></div>
+        </div>
+        <small id="status-texto">Energia: 20% (Modo Recuperação)</small>
+
+        <div id="area-dialogo"></div>
+
+        <div class="card-cuidados">
+            <span class="item">✨ <b>Status:</b> Dor de cabeça removida.</span>
+            <span class="item">💧 <b>Lembrete:</b> Beber água agora.</span>
+            <span class="item">💜 <b>Suporte:</b> Estou aqui pra você.</span>
+        </div>
+
+        <button onclick="recarregar()">Clique para receber carinho</button>
+        
+        <p style="margin-top: 20px; font-size: 0.8rem;">
+            Enviando carinho infinito... <span class="coracao">❤</span>
+        </p>
+    </div>
+
+    <audio id="som1" src="https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3"></audio>
+    <audio id="som2" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"></audio>
+
+    <script>
+        let cliques = 0;
+
+        function recarregar() {
+            cliques++;
+            
+            // Lógica da Bateria
+            const nivel = document.getElementById('nivel');
+            const textoStatus = document.getElementById('status-texto');
+            nivel.style.width = '100%';
+            nivel.style.background = '#03dac6';
+            textoStatus.innerText = "Energia: 100% (Pronta!)";
+            textoStatus.style.color = "#03dac6";
+
+            const area = document.getElementById('area-dialogo');
+            area.innerHTML = ""; // Limpa os blocos anteriores
+
+            if (cliques <= 2) {
+                // Toca som 1 e mostra primeira msg
+                tocarSom('som1');
+                criarBloco("💬 <b>Sistema:</b> Carinho digital processado.");
+                
+                setTimeout(() => {
+                    tocarSom('som2');
+                    criarBloco("✅ <b>Lariê:</b> Recebido com sucesso! ❤️");
+                }, 600);
+            } else {
+                // Toca som de alerta e mostra msg especial
+                tocarSom('som1');
+                criarBloco("⚠️ <b>Aviso:</b> Limite de carinho digital atingido.");
+                
+                setTimeout(() => {
+                    tocarSom('som2');
+                    criarBloco("😏 <b>Sistema:</b> Se quiser mais carinho, terá que receber pessoalmente!", true);
+                }, 700);
+            }
+        }
+
+        function criarBloco(texto, isEspecial = false) {
+            const area = document.getElementById('area-dialogo');
+            const div = document.createElement('div');
+            div.className = isEspecial ? 'bloco-msg bloco-especial' : 'bloco-msg';
+            div.innerHTML = texto;
+            area.appendChild(div);
+        }
+
+        function tocarSom(id) {
+            const som = document.getElementById(id);
+            som.currentTime = 0; // Reinicia o som se clicar rápido
+            som.play().catch(e => console.log("Áudio bloqueado pelo navegador até o primeiro clique."));
+        }
+    </script>
+
+</body>
+</html>
