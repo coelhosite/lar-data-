@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Configurações de Privacidade</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #bb86fc;
+            --secondary: #7c3aed;
+            --bg: #0b0b0d;
+            --card: rgba(25, 25, 28, 0.98);
+            --text-dim: #71717a;
+            --danger: #ff4444;
+            --success: #4ade80;
+        }
+
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+
+        body { 
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            background-image: radial-gradient(circle at 50% -20%, #2a1b4d 0%, transparent 50%);
+            display: flex; justify-content: center; align-items: flex-start; 
+            min-height: 100vh; margin: 0; color: #fff; padding-top: 20px;
+        }
+
+        #disguise-screen {
+            align-self: center; width: 90%; max-width: 400px; padding: 40px 30px;
+            background: var(--card); border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        #disguise-screen h3 { color: #a1a1aa; font-weight: 500; margin-bottom: 20px; }
+        #disguise-screen p { color: var(--text-dim); font-size: 0.9rem; line-height: 1.6; }
+
+        .fake-btn {
+            margin-top: 25px; width: 100%; padding: 12px;
+            background: #1a1a1e; color: #52525b; border: 1px solid #27272a;
+            border-radius: 12px; font-size: 0.85rem; cursor: pointer;
+        }
+
+        .container { 
+            display: none; width: 92%; max-width: 450px; 
+            text-align: center; animation: fadeIn 0.6s;
+        }
+        
+        #home-screen { background: var(--card); padding: 40px 25px; border-radius: 32px; border: 1px solid rgba(255,255,255,0.1); }
+        
+        .heart-icon {
+            font-size: 5rem; display: block; margin: 40px 0;
+            background: linear-gradient(135deg, #bb86fc 0%, #7c3aed 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            animation: breathe 2.5s infinite ease-in-out;
+        }
+
+        #diary-content { display: none; width: 100%; }
+        .feed-header { display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; padding: 0 10px; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; }
+        .exit-btn { background: none; border: none; color: #3f3f46; font-size: 0.65rem; letter-spacing: 2px; cursor: pointer; text-transform: uppercase; padding: 5px; }
+
+        .mood-box {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .mood-title { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 12px; letter-spacing: 1px; }
+        .mood-btns { display: flex; justify-content: space-around; font-size: 1.8rem; }
+        .mood-btn { cursor: pointer; transition: transform 0.2s; filter: grayscale(0.5); }
+        .mood-btn:hover { transform: scale(1.2); filter: grayscale(0); }
+        #mood-feedback { 
+            display: none; margin-top: 10px; font-size: 0.85rem; 
+            color: var(--primary); font-style: italic; animation: fadeIn 0.5s;
+        }
+
+        .btn-link-especial {
+            display: inline-block; text-decoration: none;
+            background: rgba(187, 134, 252, 0.1); color: var(--primary);
+            border: 1px solid rgba(187, 134, 252, 0.3); padding: 10px 15px;
+            border-radius: 12px; font-size: 0.8rem; margin-bottom: 10px;
+        }
+
+        .scratch-container {
+            position: relative; width: 100%; height: 110px;
+            margin: 10px 0 20px 0; background: #16161a; border-radius: 18px;
+            overflow: hidden; border: 1px solid rgba(187, 134, 252, 0.15);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .scratch-text { padding: 15px; text-align: center; color: #e4e4e7; font-size: 0.9rem; line-height: 1.4; font-style: italic; }
+        #scratch-canvas { position: absolute; top: 0; left: 0; cursor: crosshair; touch-action: none; }
+
+        .add-record-btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white; border: none; padding: 14px; border-radius: 15px;
+            font-weight: 600; width: 100%; box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+        }
+
+        #entries-container { width: 100%; margin-top: 20px; }
+        .entry { 
+            background: var(--card); padding: 20px; border-radius: 22px; 
+            margin-bottom: 15px; text-align: left; position: relative; 
+            border: 1px solid rgba(255,255,255,0.05); animation: fadeIn 0.4s;
+        }
+        .entry-date { font-size: 0.7rem; color: var(--primary); font-weight: bold; margin-bottom: 8px; opacity: 0.7; }
+        .entry-text { font-size: 1rem; line-height: 1.5; color: #e4e4e7; white-space: pre-wrap; }
+        .entry img { width: 100%; border-radius: 14px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.1); }
+        .btn-delete { position: absolute; top: 18px; right: 18px; background: none; color: #3f3f46; border: none; font-size: 1rem; cursor: pointer; }
+
+        /* --- ESTILOS MODO ADM / LIXEIRA --- */
+        #trash-section { display: none; margin-top: 40px; border-top: 1px dashed #333; padding-top: 20px; }
+        
+        .admin-scroll-area {
+            max-height: 250px; 
+            overflow-y: auto; 
+            text-align: left;
+            padding-right: 5px;
+            margin-bottom: 20px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        .admin-scroll-area::-webkit-scrollbar { width: 4px; }
+        .admin-scroll-area::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+
+        .btn-restore {
+            background: var(--success);
+            color: #000;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.6rem;
+            padding: 3px 8px;
+            cursor: pointer;
+            float: right;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        #composer {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+            z-index: 100; justify-content: center; align-items: center;
+        }
+        .composer-card { background: #16161a; width: 90%; max-width: 400px; padding: 25px; border-radius: 25px; border: 1px solid #27272a; }
+        
+        textarea { 
+            width: 100%; height: 140px; padding: 15px; background: #0b0b0d; 
+            border: 1px solid #27272a; border-radius: 15px; color: #fff; 
+            outline: none; resize: none; font-size: 1rem; font-family: inherit;
+            line-height: 1.5;
+        }
+        
+        .main-btn { 
+            background: linear-gradient(135deg, #bb86fc 0%, #7c3aed 100%); 
+            color: #fff; border: none; padding: 16px; border-radius: 15px; 
+            width: 100%; font-weight: 700; margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+        }
+        .main-btn:active { transform: scale(0.97); filter: brightness(1.1); }
+        .main-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div id="disguise-screen">
+    <h3>Privacidade e Segurança</h3>
+    <p>
+        A integridade deste nó de rede é protegida por camadas de criptografia ponta-a-ponta. 
+        Ao prosseguir, você confirma que os 
+        <span class="secret-trigger-word" onclick="unlockStep1()" style="cursor:pointer">sentimentos</span> 
+        e registros aqui contidos são fragmentos vitais da arquitetura <b>L.P.</b>
+        <br><br>
+        <small style="opacity: 0.5; font-family: monospace;">[STATUS: ENCRIPTADO] <br>Sessão: 6.9.1-root</small>
+    </p>
+    <button class="fake-btn" onclick="alert('Erro: Autenticação Requerida.')">Acessar Banco de Dados</button>
+</div>
+
+<div class="container" id="main-app">
+    <div id="home-screen">
+        <h1 style="letter-spacing: 8px; font-weight: 200; color: var(--primary); font-size: 1.2rem;">LARIÊ...</h1>
+        <div id="secret-trigger" style="cursor: pointer;"><span class="heart-icon">💜</span></div>
+        <p style="color: var(--text-dim); font-size: 0.7rem; letter-spacing: 2px;">IDENTIDADE REQUERIDA</p>
+    </div>
+
+    <div id="diary-content">
+        <div class="feed-header">
+            <div class="header-top">
+                <h2 style="color: var(--primary); font-weight: 300; margin: 0; font-size: 2.1rem;">PARA ELA... <3</h2>
+                <button class="exit-btn" onclick="location.reload()">Sair</button>
+            </div>
+            
+            <div class="mood-box">
+                <div class="mood-title">COMO ESTÁS HOJE, LARISSA?</div>
+                <div class="mood-btns">
+                    <span class="mood-btn" onclick="setMood('Radiante', '😊')">😊</span>
+                    <span class="mood-btn" onclick="setMood('Normal', '😐')">😐</span>
+                    <span class="mood-btn" onclick="setMood('Triste/Cansada', '😔')">😔</span>
+                </div>
+                <div id="mood-feedback"></div>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <a id="btnCarta" href="bom-dia.html" onclick="registrarClique()" class="btn-link-especial" style="flex: 1; margin-bottom: 0; text-align: center; padding: 12px 5px;">✨ Carta Especial</a>
+                <a id="btnPiano" href="piano.html" class="btn-link-especial" style="flex: 1; margin-bottom: 0; text-align: center; padding: 12px 5px; background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.2); color: #fff;">🎹 Piano pra ela</a>
+            </div>
+
+            <div class="scratch-container">
+                <div id="scratch-text-element" class="scratch-text"></div>
+                <canvas id="scratch-canvas"></canvas>
+            </div>
+
+            <button class="add-record-btn" onclick="toggleComposer(true)">+ Novo Registro</button>
+        </div>
+        
+        <div id="entries-container">Carregando momentos...</div>
+
+        <div id="trash-section">
+            <div id="admin-stats-box" style="background: #1a1a1e; padding: 15px; border-radius: 15px; margin-bottom: 20px; text-align: left; font-size: 0.8rem; color: var(--primary);">
+                <b>ESTATÍSTICAS:</b> <span id="stats-content">Carregando...</span>
+            </div>
+            <div style="color: var(--danger); font-size: 0.8rem; letter-spacing: 2px; margin-bottom: 15px; text-align: center;">🗑️ LIXEIRA & MONITORAMENTO ADM</div>
+            <div id="trash-container"></div>
+        </div>
+    </div>
+</div>
+
+<div id="composer" onclick="if(event.target==this) toggleComposer(false)">
+    <div class="composer-card">
+        <h3 style="margin-top: 0; font-weight: 400;">Novo Registro</h3>
+        <textarea id="comment" placeholder="Escreva algo..."></textarea>
+        <div style="margin-top: 15px; text-align: left;">
+            <input type="file" id="imageInput" accept="image/*" style="font-size: 0.7rem; color: #71717a;">
+        </div>
+        <button id="post-btn" class="main-btn" onclick="saveEntry()">Publicar</button>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyAiwLZG2g_3S7pLkdXQtYqz14rTgd1FPOg",
+        authDomain: "meudiario-59cba.firebaseapp.com",
+        databaseURL: "https://meudiario-59cba-default-rtdb.firebaseio.com", 
+        projectId: "meudiario-59cba",
+        storageBucket: "meudiario-59cba.firebasestorage.app",
+        messagingSenderId: "426502564208",
+        appId: "1:426502564208:web:07839ac5ffd480f95547b5"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    firebase.auth().signInAnonymously();
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playScratchSound() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const bufferSize = audioCtx.sampleRate * 0.05;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const output = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) { output[i] = Math.random() * 2 - 1; }
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'bandpass'; filter.frequency.value = 1500; filter.Q.value = 0.5;
+        const gainNode = audioCtx.createGain();
+        gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+        noise.connect(filter); filter.connect(gainNode); gainNode.connect(audioCtx.destination);
+        noise.start();
+    }
+
+    function playConfettiSound() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine'; osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(10, now + 0.1);
+        gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0, now + 0.1);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(now); osc.stop(now + 0.1);
+    }
+
+    function registrarClique() {
+        db.ref('monitoramento/visitas_carta').push({
+            data: new Date().toLocaleString('pt-BR'),
+            evento: "Clique no Botão"
+        });
+    }
+
+    const frasesElogios = [
+        "O seu cabelo hoje está de parabéns, mas ele só é assim porque pertence a você. ✨",
+        "Você merece o mundo, e eu espero que ele te trate com doçura. 🍭",
+        "Te ver feliz é a melhor parte do meu dia. 😊",
+        "Seu cabelo é como um horizonte que não termina; uma moldura perfeita que abraça o seu rosto e dança conforme o ritmo do vento. 🍃",
+        "Não canso de admirar a mulher incrível que você é. 🌹",
+        "Seu sorriso ilumina mais que a Lua em noites claras. 🌙",
+        "Sua existência é um lembrete de que a perfeição existe nos detalhes. 💎",
+        "Você faz a diferença na vida de quem tem a sorte de te conhecer. 🌟",
+        "Você é o tipo de pessoa que a gente quer guardar num potinho, de tão valiosa. 🍯",
+        "Você é uma pessoa muito incrível! ⭐",
+        "Se a vida fosse um livro, você seria o capítulo que eu leria repetidamente. 📖",
+        "Não permita que nada te abale, hoje. 💪",
+        "Você tem a calma do mar e a força das tempestades, tudo em um só ser. 🌊",
+        "Faltam palavras para descrever o quanto você me encanta. 😍",
+        "Você é única, Larissa. Nunca mude isso. ❤️",
+        "Você é aquela raridade que a gente tem sorte de encontrar. 💎",
+        "Enquanto houver você, haverá um motivo para acreditar no extraordinário. ✨",
+        "Sorria. Seu sorriso é um remédio perfeito. 💊",
+        "Sua sensibilidade é o que te permite ver beleza onde ninguém mais vê. 🎨",
+        "Você é o verso mais bonito que o destino já recitou para mim. 📜",
+        "Só pra te lembrar: você é incrível hoje e sempre. ❤️",
+        "Se a vida fizer brotar lágrimas nos seus olhos, permita-me te secar-las. 💧",
+        "Seu brilho é único e sua alma é linda demais. ✨",
+        "Sua presença é como um abraço na alma. 🤗",
+        "Cada detalhe seu, da pontinha do pé até o último fio de cabelo, é impecável. 👑",
+        "O 'jeito Larissa de ser' é o meu detalhe favorito. 💖",
+        "Esses olhinhos seus são os mais perfeitos que ja vi! 👀",
+        "Sua postura e suas curvas têm uma elegância que é só sua, Larissa. 💃",
+        "Nunca esqueça o quanto você é valiosa. 🌻",
+        "Você é inteligente, linda e dona de um coração gigante. 🧡",
+        "Sua vida é uma obra-prima em constante evolução. 🖼️",
+        "Seu coração é um mapa de tesouros que eu adoraria desvendar todos os dias. 🗺️",
+        "Você tem o dom de transformar momentos comuns em memórias eternas. ⏳",
+        "O mundo gira um pouco mais devagar quando você sorri para mim. 🌎",
+        "Sua essência é feita de sonhos, coragem e um toque de magia. 🪄",
+        "Você é a prova de que a delicadeza pode ser a maior das forças. 🌸",
+        "Sua pele parece carregar o toque suave da manhã. 🌅",
+        "Você é linda de um jeito que as palavras tentam, mas nunca conseguem explicar totalmente. 😶‍🌫️",
+        "Você é o sol que atravessa a janela em uma tarde fria de inverno. ☀️",
+        "Admirar você é como olhar para um céu estrelado: sempre há algo novo para brilhar. 🌌",
+        "Admirar você é uma jornada sem fim, e eu amo cada passo desse caminho. 👣",
+        "Sua alma é um jardim secreto onde só florescem as melhores intenções. 🌷",
+        "Você é o equilíbrio entre tudo o que eu imaginei e o que eu nunca soube que precisava. ⚖️",
+        "Onde você coloca o pé, você deixa um rastro de luz e admiração. ✨",
+        "Cada vez que te vejo, descubro um detalhe novo para me apaixonar. 💞",
+        "Sua voz é o som que eu escolheria para silenciar o mundo. 🎶",
+        "Cada detalhe seu me faz admirar você ainda mais. 🔎",
+        "Você é la personificação de que o amor e a beleza podem ser a mesma coisa. ☯️",
+        "Que o universo sempre conspire a favor do seu brilho, Larissa. 🪐",
+        "Admirar você é a coisa mais fácil do mundo. 👌",
+        "O seu perfume fica no ar e me faz lembrar de você o dia inteirinho. 🌬️",
+        "Mesmo quando o vento bagunça o seu cabelo, ele parece encontrar uma nova forma de ser perfeito. 🌬️",
+        "Que o universo sempre conspire a favor do seu brilho, Larissa. 🌠",
+        "Seu riso solto é a trilha sonora que eu escolheria para todos os meus dias. ✨",
+        "Adoro o desenho da sua sobrancelha; ela molda o seu olhar de um jeito perfeito. ✍️",
+        "Se o objetivo era me encantar, parabéns, você conseguiu com sobra. 👏",
+        "Eu mergulharia na imensidão do seu cabelo só para descobrir todos os seus segredos. 🌊",
+        "Seu perfume divino é o complemento de tudo o que você é. 🌸",
+        "Você é autêntica em um mundo cheio de cópias. 💎",
+        "Cada detalhe seu me faz admirar ainda mais o conjunto. 🧩",
+        "Eu amo a forma como você vê o mundo. 👁️",
+        "Você é luz, mesmo nos dias em que o céu insiste em ficar cinza. 🌤️",
+        "Adoro como o seu cabelo combina exatamente com a sua personalidade. 💁‍♀️",
+        "Existem pessoas comuns e existe você, que é extraordinária. 🚀",
+        "Seu nome é o primeiro que vem à cabeça quando penso em algo bom. 💭",
+        "Sua beleza externa é apenas um reflexo da luz imensa que você carrega dentro de si. 🕯️",
+        "Você é a prova de que a perfeição mora nos pequenos detalhes e no carisma único. ✨",
+        "Sua felicidade é o meu objetivo principal. 🎯",
+        "Seu abraço demorado é o lugar onde o mundo finalmente faz sentido. 🫂",
+        "Não existe ninguém no mundo que consiga ser 'Larissa' tão bem quanto você. 🥇",
+        "Sua pele carrega o viço das manhãs e o calor do sol; é um território de suavidade onde a beleza resolveu fazer morada permanente. ☀️",
+    ];
+
+    let startTime;
+    let hasScratched = false;
+
+    function unlockStep1() {
+        window.open('bom-dia.html', '_blank');
+        document.getElementById('disguise-screen').style.display = 'none';
+        document.getElementById('main-app').style.display = 'block';
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function setMood(mood, emoji) {
+        const feedback = document.getElementById('mood-feedback');
+        feedback.style.display = 'block';
+        let msg = mood === 'Radiante' ? "Fico feliz por você! ✨" : "Estou aqui contigo. 💜";
+        feedback.innerText = msg;
+        db.ref('monitoramento/humor').push({
+            data: new Date().toLocaleString('pt-BR'),
+            estado: mood,
+            emoji: emoji
+        });
+    }
+
+    function initScratchCard() {
+        const canvas = document.getElementById('scratch-canvas');
+        const textElement = document.getElementById('scratch-text-element');
+        const container = canvas.parentElement;
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        const frase = frasesElogios[Math.floor(Math.random() * frasesElogios.length)];
+        textElement.innerText = frase;
+        canvas.width = container.offsetWidth;
+        canvas.height = container.offsetHeight;
+        ctx.fillStyle = '#27272a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#bb86fc';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('RASPE UM ELOGIO 💜', canvas.width/2, canvas.height/2 + 5);
+        
+        function scratch(e) {
+            if (!isDrawing) return;
+            playScratchSound();
+            if(!hasScratched) {
+                db.ref('monitoramento/raspadas').push({ data: new Date().toLocaleString('pt-BR'), frase: frase });
+                hasScratched = true;
+            }
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
+            const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath(); ctx.arc(x, y, 22, 0, Math.PI * 2); ctx.fill();
+        }
+        canvas.addEventListener('mousedown', () => isDrawing = true);
+        canvas.addEventListener('touchstart', () => isDrawing = true);
+        window.addEventListener('mouseup', () => isDrawing = false);
+        window.addEventListener('touchend', () => isDrawing = false);
+        canvas.addEventListener('mousemove', scratch);
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); scratch(e); });
+    }
+
+    const trigger = document.getElementById('secret-trigger');
+    trigger.addEventListener('mousedown', () => { startTime = Date.now(); if (audioCtx.state === 'suspended') audioCtx.resume(); });
+    trigger.addEventListener('touchstart', (e) => { e.preventDefault(); startTime = Date.now(); if (audioCtx.state === 'suspended') audioCtx.resume(); });
+    trigger.addEventListener('mouseup', handleEnd);
+    trigger.addEventListener('touchend', handleEnd);
+
+    function handleEnd() {
+        const duration = Date.now() - startTime;
+        if (duration >= 500) {
+            const senha = prompt("Chave de Segurança:");
+            if (senha === "4691") {
+                playConfettiSound(); 
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#bb86fc', '#7c3aed', '#ffffff'] });
+                document.getElementById('home-screen').style.display = 'none';
+                document.getElementById('diary-content').style.display = 'block';
+                initScratchCard();
+                loadEntries();
+            } else if (senha === "7654") { 
+                document.getElementById('home-screen').style.display = 'none';
+                document.getElementById('diary-content').style.display = 'block';
+                document.getElementById('trash-section').style.display = 'block';
+                loadEntries();
+                loadTrash();
+            } else if (senha) alert("Incorreto.");
+        }
+    }
+
+    function deleteEntry(id) {
+        if(confirm("Mover para a lixeira?")) {
+            db.ref('entries/' + id).once('value', s => {
+                db.ref('trash/' + id).set(s.val()).then(() => db.ref('entries/' + id).remove());
+            });
+        }
+    }
+
+    // --- FUNÇÃO PARA RESTAURAR DA LIXEIRA ---
+    function restoreEntry(id) {
+        if(confirm("Deseja restaurar este registro para o feed?")) {
+            db.ref('trash/' + id).once('value', s => {
+                if(s.exists()) {
+                    db.ref('entries/' + id).set(s.val()).then(() => {
+                        db.ref('trash/' + id).remove();
+                    });
+                }
+            });
+        }
+    }
+
+    function loadEntries() {
+        db.ref('entries').on('value', s => {
+            const container = document.getElementById('entries-container');
+            container.innerHTML = '';
+            const data = s.val();
+            if (data) {
+                Object.keys(data).reverse().forEach(k => {
+                    container.innerHTML += `<div class="entry">
+                        <button class="btn-delete" onclick="deleteEntry('${k}')">✕</button>
+                        <div class="entry-date">${data[k].date}</div>
+                        <div class="entry-text">${data[k].comment}</div>
+                        ${data[k].image ? `<img src="${data[k].image}">` : ''}
+                    </div>`;
+                });
+            } else container.innerHTML = "Sem momentos.";
+        });
+    }
+
+    // --- FUNÇÃO MODO ADM ATUALIZADA (COM RESTORE E SCROLL) ---
+    function loadTrash() {
+        const trashContainer = document.getElementById('trash-container');
+        const statsContent = document.getElementById('stats-content');
+        
+        db.ref().on('value', s => {
+            const root = s.val();
+            let html = "";
+            
+            // Stats de Cliques
+            const cliques = root.monitoramento && root.monitoramento.visitas_carta ? Object.keys(root.monitoramento.visitas_carta).length : 0;
+            statsContent.innerText = `Cliques na Carta: ${cliques}`;
+
+            if(root) {
+                // 1. Itens Apagados (Lixeira)
+                if(root.trash) {
+                    html += `<b style="color:var(--danger)">🗑️ REGISTROS NA LIXEIRA:</b><br>`;
+                    html += `<div class="admin-scroll-area">`;
+                    Object.keys(root.trash).reverse().forEach(k => {
+                        const item = root.trash[k];
+                        html += `<div style="font-size:0.7rem; margin-bottom:10px; padding:8px; background:rgba(255,68,68,0.1); border-radius:8px; border-left:3px solid var(--danger)">
+                                    <button class="btn-restore" onclick="restoreEntry('${k}')">RESTAURAR</button>
+                                    <b>${item.date}</b><br>${item.comment ? item.comment.substring(0, 60) + '...' : '[Apenas Imagem]'}
+                                 </div>`;
+                    });
+                    html += `</div>`;
+                }
+
+                // 2. Histórico de Raspadinhas
+                if(root.monitoramento && root.monitoramento.raspadas) {
+                    html += `<b style="color:var(--primary)">💎 ÚLTIMAS RASPADINHAS:</b><br>`;
+                    html += `<div class="admin-scroll-area">`;
+                    Object.values(root.monitoramento.raspadas).reverse().forEach(r => {
+                        html += `<div style="font-size:0.7rem; margin-bottom:5px; border-bottom:1px solid #222; padding-bottom:3px">• ${r.data}: <br><i>"${r.frase}"</i></div>`;
+                    });
+                    html += `</div>`;
+                }
+                
+                // 3. Histórico de Humores
+                if(root.monitoramento && root.monitoramento.humor) {
+                    html += `<b style="color:var(--success)">🎭 HISTÓRICO DE HUMOR:</b><br>`;
+                    html += `<div class="admin-scroll-area">`;
+                    Object.values(root.monitoramento.humor).reverse().forEach(h => {
+                        html += `<div style="font-size:0.7rem; margin-bottom:5px;">• ${h.data}: ${h.emoji} (${h.estado})</div>`;
+                    });
+                    html += `</div>`;
+                }
+            }
+            trashContainer.innerHTML = html || "Nenhum dado capturado.";
+        });
+    }
+
+    function toggleComposer(show) { 
+        document.getElementById('composer').style.display = show ? 'flex' : 'none';
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    async function saveEntry() {
+        const commentArea = document.getElementById('comment');
+        const imageInput = document.getElementById('imageInput');
+        const postBtn = document.getElementById('post-btn');
+        const comment = commentArea.value;
+        const file = imageInput.files[0];
+        
+        if (!comment && !file) return;
+
+        postBtn.disabled = true;
+        postBtn.innerText = "PUBLICANDO...";
+        postBtn.style.filter = "grayscale(1)";
+
+        try {
+            const date = new Date().toLocaleString('pt-BR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+            let imgData = file ? await compressImg(file) : "";
+            await db.ref('entries').push({ date, comment, image: imgData });
+            playConfettiSound();
+            commentArea.value = "";
+            imageInput.value = "";
+            toggleComposer(false);
+        } catch (error) {
+            alert("Erro ao postar: " + error.message);
+        } finally {
+            postBtn.disabled = false;
+            postBtn.innerText = "Publicar";
+            postBtn.style.filter = "none";
+        }
+    }
+
+    function compressImg(file) {
+        return new Promise(res => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = e => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const scale = 800 / img.width;
+                    canvas.width = 800; canvas.height = img.height * scale;
+                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                    res(canvas.toDataURL('image/jpeg', 0.6));
+                }
+            }
+        });
+    }
+</script>
+</body>
+</html>
