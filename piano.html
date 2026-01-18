@@ -10,19 +10,19 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
 
     <style>
-        /* Ajuste para ocupar a tela toda mantendo o seu design */
         :root { 
-            --w: 4.7vw; /* Ajustado para caber as oitavas na largura da tela */
+            /* Cálculo para preencher a tela: 100% da largura dividido por 21 teclas brancas (3 oitavas) */
+            --w: calc(100vw / 21); 
             --h: 170px; 
         }
         body { margin: 0; background: #000; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
         
-        #main-app { display: flex; flex-direction: column; align-items: center; padding: 10px; width: 98vw; }
+        #main-app { display: flex; flex-direction: column; align-items: center; padding: 0; width: 100vw; }
 
-        #tutorial-screen { width: 100%; padding: 5px; background: #1e272e; text-align: center; font-size: 0.8rem; border-bottom: 1px solid #3498db; margin-bottom: 5px; }
+        #tutorial-screen { width: 100%; padding: 5px; background: #1e272e; text-align: center; font-size: 0.8rem; border-bottom: 1px solid #3498db; margin-bottom: 5px; box-sizing: border-box;}
         .highlight-text { color: #f1c40f; font-weight: bold; }
 
-        .controls { margin-bottom: 8px; display: flex; gap: 4px; justify-content: center; }
+        .controls { margin: 10px 0; display: flex; gap: 4px; justify-content: center; }
         button { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 10px; text-transform: uppercase; }
         
         .btn-learn { background: #3498db; color: white; }
@@ -34,32 +34,29 @@
         #piano { 
             display: flex; 
             position: relative; 
-            padding: 5px; 
+            padding: 0; 
             background: #111; 
-            border-radius: 8px; 
             touch-action: none; 
-            width: 100%; 
+            width: 100vw; /* Piano estica na tela toda */
             justify-content: center;
-            box-sizing: border-box;
         }
         
-        .key { position: relative; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 8px; font-weight: bold; font-size: 11px; }
+        .key { position: relative; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 8px; font-weight: bold; font-size: 11px; box-sizing: border-box; }
         
-        .white { width: var(--w); height: var(--h); background: #fff; border: 1px solid #ccc; border-radius: 0 0 4px 4px; color: #333; z-index: 1; }
-        /* A largura da preta agora é proporcional à branca */
-        .black { width: calc(var(--w) * 0.6); height: 100px; background: #2f3542; margin: 0 calc(var(--w) * -0.3); z-index: 2; border-radius: 0 0 3px 3px; color: white; font-size: 8px; }
+        .white { width: var(--w); height: var(--h); background: #fff; border: 1px solid #ccc; border-radius: 0 0 4px 4px; color: #333; z-index: 1; flex-shrink: 0;}
+        .black { width: calc(var(--w) * 0.6); height: 100px; background: #2f3542; margin: 0 calc(var(--w) * -0.3); z-index: 2; border-radius: 0 0 3px 3px; color: white; font-size: 8px; flex-shrink: 0;}
         
         .next-note { background: #f1c40f !important; box-shadow: 0 0 15px #f1c40f; color: black !important; z-index: 3; }
         .playing { background: #2ecc71 !important; }
 
         #recordings-container { 
-            margin-top: 5px; width: 100%; max-height: 90px; overflow-y: auto; 
-            background: rgba(255,255,255,0.03); border-radius: 4px; padding: 4px; box-sizing: border-box;
+            margin-top: 10px; width: 100%; max-height: 120px; overflow-y: auto; 
+            background: rgba(255,255,255,0.03); border-radius: 4px; padding: 10px; box-sizing: border-box;
         }
         
         .recording-item { 
             display: flex; justify-content: space-between; align-items: center; 
-            background: #111; margin-bottom: 2px; padding: 4px 10px; border-radius: 2px; font-size: 10px;
+            background: #111; margin-bottom: 4px; padding: 6px 15px; border-radius: 2px; font-size: 10px;
             border-left: 3px solid #2ecc71;
         }
         
@@ -69,9 +66,10 @@
 
         .hidden { display: none !important; }
 
-        /* Manti seu suporte a rotação original */
         @media screen and (orientation: portrait) {
-            #main-app { transform: rotate(90deg); transform-origin: center; position: absolute; top: 50%; left: 50%; translate: -50% -50%; }
+            #main-app { transform: rotate(90deg); transform-origin: center; position: absolute; top: 50%; left: 50%; translate: -50% -50%; width: 100vh;}
+            #piano { width: 100vh; }
+            :root { --w: calc(100vh / 21); }
         }
     </style>
 </head>
@@ -89,56 +87,53 @@
         <button class="btn-plus" onclick="toggleOctave()" id="plusBtn">+</button>
     </div>
 
-    <div style="display: flex; flex-direction: column; width: 100%;">
-        <div id="piano">
-            <div class="key white" data-note="261.63" id="C4">DO</div>
-            <div class="key black" data-note="277.18" id="Cs4"></div>
-            <div class="key white" data-note="293.66" id="D4">RE</div>
-            <div class="key black" data-note="311.13" id="Ds4"></div>
-            <div class="key white" data-note="329.63" id="E4">MI</div>
-            <div class="key white" data-note="349.23" id="F4">FA</div>
-            <div class="key black" data-note="369.99" id="Fs4"></div>
-            <div class="key white" data-note="392.00" id="G4">SOL</div>
-            <div class="key black" data-note="415.30" id="Gs4"></div>
-            <div class="key white" data-note="440.00" id="A4">LA</div>
-            <div class="key black" data-note="466.16" id="As4"></div>
-            <div class="key white" data-note="493.88" id="B4">SI</div>
+    <div id="piano">
+        <div class="key white" data-note="261.63" id="C4">DO</div>
+        <div class="key black" data-note="277.18" id="Cs4"></div>
+        <div class="key white" data-note="293.66" id="D4">RE</div>
+        <div class="key black" data-note="311.13" id="Ds4"></div>
+        <div class="key white" data-note="329.63" id="E4">MI</div>
+        <div class="key white" data-note="349.23" id="F4">FA</div>
+        <div class="key black" data-note="369.99" id="Fs4"></div>
+        <div class="key white" data-note="392.00" id="G4">SOL</div>
+        <div class="key black" data-note="415.30" id="Gs4"></div>
+        <div class="key white" data-note="440.00" id="A4">LA</div>
+        <div class="key black" data-note="466.16" id="As4"></div>
+        <div class="key white" data-note="493.88" id="B4">SI</div>
 
-            <div class="key white extra-keys hidden" data-note="523.25" id="C5">DO</div>
-            <div class="key black extra-keys hidden" data-note="554.37" id="Cs5"></div>
-            <div class="key white extra-keys hidden" data-note="587.33" id="D5">RE</div>
-            <div class="key black extra-keys hidden" data-note="622.25" id="Ds5"></div>
-            <div class="key white extra-keys hidden" data-note="659.25" id="E5">MI</div>
-            <div class="key white extra-keys hidden" data-note="698.46" id="F5">FA</div>
-            <div class="key black extra-keys hidden" data-note="739.99" id="Fs5"></div>
-            <div class="key white extra-keys hidden" data-note="783.99" id="G5">SOL</div>
-            <div class="key black extra-keys hidden" data-note="830.61" id="Gs5"></div>
-            <div class="key white extra-keys hidden" data-note="880.00" id="A5">LA</div>
-            <div class="key black extra-keys hidden" data-note="932.33" id="As5"></div>
-            <div class="key white extra-keys hidden" data-note="987.77" id="B5">SI</div>
+        <div class="key white extra-keys hidden" data-note="523.25" id="C5">DO</div>
+        <div class="key black extra-keys hidden" data-note="554.37" id="Cs5"></div>
+        <div class="key white extra-keys hidden" data-note="587.33" id="D5">RE</div>
+        <div class="key black extra-keys hidden" data-note="622.25" id="Ds5"></div>
+        <div class="key white extra-keys hidden" data-note="659.25" id="E5">MI</div>
+        <div class="key white extra-keys hidden" data-note="698.46" id="F5">FA</div>
+        <div class="key black extra-keys hidden" data-note="739.99" id="Fs5"></div>
+        <div class="key white extra-keys hidden" data-note="783.99" id="G5">SOL</div>
+        <div class="key black extra-keys hidden" data-note="830.61" id="Gs5"></div>
+        <div class="key white extra-keys hidden" data-note="880.00" id="A5">LA</div>
+        <div class="key black extra-keys hidden" data-note="932.33" id="As5"></div>
+        <div class="key white extra-keys hidden" data-note="987.77" id="B5">SI</div>
 
-            <div class="key white extra-keys hidden" data-note="1046.50" id="C6">DO</div>
-            <div class="key black extra-keys hidden" data-note="1108.73" id="Cs6"></div>
-            <div class="key white extra-keys hidden" data-note="1174.66" id="D6">RE</div>
-            <div class="key black extra-keys hidden" data-note="1244.51" id="Ds6"></div>
-            <div class="key white extra-keys hidden" data-note="1318.51" id="E6">MI</div>
-            <div class="key white extra-keys hidden" data-note="1396.91" id="F6">FA</div>
-            <div class="key black extra-keys hidden" data-note="1479.98" id="Fs6"></div>
-            <div class="key white extra-keys hidden" data-note="1567.98" id="G6">SOL</div>
-            <div class="key black extra-keys hidden" data-note="1661.22" id="Gs6"></div>
-            <div class="key white extra-keys hidden" data-note="1760.00" id="A6">LA</div>
-            <div class="key black extra-keys hidden" data-note="1864.66" id="As6"></div>
-            <div class="key white extra-keys hidden" data-note="1975.53" id="B6">SI</div>
-        </div>
+        <div class="key white extra-keys hidden" data-note="1046.50" id="C6">DO</div>
+        <div class="key black extra-keys hidden" data-note="1108.73" id="Cs6"></div>
+        <div class="key white extra-keys hidden" data-note="1174.66" id="D6">RE</div>
+        <div class="key black extra-keys hidden" data-note="1244.51" id="Ds6"></div>
+        <div class="key white extra-keys hidden" data-note="1318.51" id="E6">MI</div>
+        <div class="key white extra-keys hidden" data-note="1396.91" id="F6">FA</div>
+        <div class="key black extra-keys hidden" data-note="1479.98" id="Fs6"></div>
+        <div class="key white extra-keys hidden" data-note="1567.98" id="G6">SOL</div>
+        <div class="key black extra-keys hidden" data-note="1661.22" id="Gs6"></div>
+        <div class="key white extra-keys hidden" data-note="1760.00" id="A6">LA</div>
+        <div class="key black extra-keys hidden" data-note="1864.66" id="As6"></div>
+        <div class="key white extra-keys hidden" data-note="1975.53" id="B6">SI</div>
+    </div>
 
-        <div id="recordings-container">
-            <div id="recordingsList"></div>
-        </div>
+    <div id="recordings-container">
+        <div id="recordingsList"></div>
     </div>
 </div>
 
 <script>
-    // Suas credenciais do Firebase originais mantidas
     const firebaseConfig = {
         apiKey: "AIzaSyAiwLZG2g_3S7pLkdXQtYqz14rTgd1FPOg",
         authDomain: "meudiario-59cba.firebaseapp.com",
@@ -171,7 +166,13 @@
         const extras = document.querySelectorAll('.extra-keys');
         const btn = document.getElementById('plusBtn');
         extras.forEach(k => k.classList.toggle('hidden'));
-        btn.innerText = extras[0].classList.contains('hidden') ? "+" : "-";
+        
+        // Atualiza o cálculo da largura baseado em quantas oitavas estão visíveis
+        const isHidden = extras[0].classList.contains('hidden');
+        const whiteKeysCount = isHidden ? 7 : 21;
+        document.documentElement.style.setProperty('--w', `calc(100vw / ${whiteKeysCount})`);
+        
+        btn.innerText = isHidden ? "+" : "-";
     }
 
     db.ref('piano/gravacoes').on('value', snapshot => {
@@ -297,13 +298,13 @@
     }
 
     document.querySelectorAll('.key').forEach(key => {
-        const action = (e) => { 
-            e.preventDefault(); 
-            playNote(parseFloat(key.dataset.note), key.id); 
-        };
+        const action = (e) => { e.preventDefault(); playNote(parseFloat(key.dataset.note), key.id); };
         key.addEventListener('mousedown', action);
         key.addEventListener('touchstart', action);
     });
+    
+    // Inicia com o cálculo correto para 1 oitava visível
+    document.documentElement.style.setProperty('--w', `calc(100vw / 7)`);
 </script>
 </body>
 </html>
