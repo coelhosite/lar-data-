@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinity RARA</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=Montserrat:wght@200;400&display=swap" rel="stylesheet">
+    <style>
+        :root { --accent: #f8edeb; --gold: #d4af37; --bg: #010103; }
+        body, html { margin: 0; padding: 0; background: var(--bg); color: var(--accent); font-family: 'Montserrat', sans-serif; overflow: hidden; height: 100vh; }
+        
+        /* FUNDO ESPAÇO COM DOBRA */
+        #nebula { position: fixed; inset: 0; z-index: 1; background: #000; overflow: hidden; }
+        .star-layer { position: absolute; inset: 0; pointer-events: none; }
+
+        /* PROLOGUE */
+        #prologue {
+            position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.9);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; padding: 30px; cursor: pointer; transition: 1.5s;
+        }
+        .story-line { font-family: 'Cormorant Garamond', serif; font-size: 1.6rem; font-style: italic; opacity: 0; display: none; max-width: 700px; text-shadow: 0 0 15px rgba(255,255,255,0.4); }
+        
+        .charge-btn { 
+            width: 100px; height: 100px; border-radius: 50%; border: 1px solid var(--gold);
+            display: flex; align-items: center; justify-content: center; position: relative; 
+            margin-top: 40px; cursor: pointer; z-index: 510;
+        }
+        .charge-fill { position: absolute; inset: 0; border-radius: 50%; background: var(--gold); transform: scale(0); opacity: 0.5; }
+
+        .stage { position: relative; z-index: 10; height: 100vh; display: none; flex-direction: column; align-items: center; justify-content: center; opacity: 0; }
+        
+        /* PUZZLE SEM GRADE */
+        .puzzle-container { position: relative; width: 300px; height: 300px; margin-bottom: 40px; }
+        .grid-container { position: relative; width: 300px; height: 300px; }
+        
+        .tile { 
+            width: 100px; height: 100px; 
+            background-image: url('https://raw.githubusercontent.com/coelhosite/r-a-r-a/main/rara.jpeg');
+            background-size: 300px 300px;
+            position: absolute; 
+            filter: blur(40px) brightness(0);
+            pointer-events: none;
+            transition: filter 2s, transform 1s;
+        }
+        .tile.unlocked { filter: blur(15px) grayscale(0.8) brightness(0.3); }
+        .tile.final-reveal { filter: blur(0) grayscale(0) brightness(1.2) !important; z-index: 100; box-shadow: 0 0 40px rgba(212,175,55,0.3); }
+
+        .card { width: 380px; text-align: center; z-index: 20; background: rgba(0,0,0,0.7); padding: 30px; border-radius: 20px; backdrop-filter: blur(15px); border: 1px solid rgba(212, 175, 55, 0.2); }
+        .label { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.1rem; color: var(--gold); letter-spacing: 5px; text-transform: uppercase; }
+        .desc { font-size: 0.85rem; color: #b0b0b0; margin: 20px 0; line-height: 2; min-height: 50px; }
+        
+        input { 
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; 
+            text-align: center; width: 80%; padding: 12px; outline: none; border-radius: 5px; font-family: 'Montserrat';
+        }
+        input:focus { border-color: var(--gold); }
+        
+        .btn { margin-top: 20px; background: var(--gold); border: none; color: #000; padding: 12px 40px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.7rem; text-transform: uppercase; }
+        .btn:disabled { background: #1a1a1a; color: #444; }
+
+        #final-msg { position: absolute; opacity: 0; text-align: center; z-index: 200; width: 90%; pointer-events: none; }
+
+        /* EFEITO DE TREMOR (GLITCH) */
+        .glitch-shake { animation: shake 0.1s infinite; filter: hue-rotate(90deg) contrast(200%); }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            20% { transform: translate(-2px, -1px) rotate(-1deg); }
+            40% { transform: translate(-1px, 2px) rotate(1deg); }
+            60% { transform: translate(2px, 1px) rotate(0deg); }
+            80% { transform: translate(-1px, -2px) rotate(-1deg); }
+            100% { transform: translate(1px, 2px) rotate(1deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="nebula">
+    <canvas id="spaceCanvas"></canvas>
+</div>
+
+<div id="prologue" onclick="initAudio()">
+    <div id="line-1" class="story-line"></div>
+    <div id="line-2" class="story-line"></div>
+    <div id="line-3" class="story-line">Aguarde a calibração da alma, Larissa.</div>
+    <div id="line-4" class="story-line">Sinta o pulso do universo.</div>
+    <div id="charge-zone" style="opacity:0">
+        <div class="charge-btn" onmousedown="startCharge()" onmouseup="stopCharge()" ontouchstart="startCharge()" ontouchend="stopCharge()">
+            <div id="fill" class="charge-fill"></div>
+            <span style="font-size: 0.6rem; font-weight: bold; letter-spacing: 2px; z-index: 10;">ENTRAR</span>
+        </div>
+    </div>
+</div>
+
+<div class="stage" id="main-stage">
+    <div class="puzzle-container">
+        <div class="grid-container" id="puzzle-grid"></div>
+    </div>
+    <div class="card" id="main-card">
+        <div class="label" id="cycle-label">Sintonizando...</div>
+        <div class="desc" id="quest-text">Aguarde...</div>
+        <div id="ui-active">
+            <input type="text" id="user-ans" placeholder="QUAL A SENHA?" autocomplete="off">
+            <br><button class="btn" id="unlock-btn" onclick="verify()">Desbloquear Fragmento</button>
+        </div>
+    </div>
+    <div id="final-msg"></div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // Firebase Config e SFX permanecem iguais
+    const firebaseConfig = { apiKey: "AIzaSyCVvR7zIOr30JG-M-0vkQRqZT6DKHPrHuo", authDomain: "projeto-specimen.firebaseapp.com", projectId: "projeto-specimen", storageBucket: "projeto-specimen.firebasestorage.app", messagingSenderId: "527660235211", appId: "1:527660235211:web:9f29491bb713561f50de4e" };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const userRef = doc(db, "progresso", "usuario_unico");
+
+    const sfx = {
+        bg: new Howl({ src: ['https://assets.mixkit.co/music/preview/mixkit-deep-space-97.mp3'], loop: true, volume: 0.3 }),
+        click: new Howl({ src: ['https://assets.mixkit.co/sfx/preview/mixkit-click-melodic-110.mp3'], volume: 0.4 }),
+        success: new Howl({ src: ['https://assets.mixkit.co/sfx/preview/mixkit-unlock-game-notification-253.mp3'], volume: 0.5 }),
+        reveal: new Howl({ src: ['https://assets.mixkit.co/sfx/preview/mixkit-cinematic-mystery-reveal-911.mp3'], volume: 0.8 })
+    };
+
+    const QUESTS = [
+        { q: "Qual o detalhe em você que é o meu mapa favorito?", a: "olhos" }, 
+        { q: "A data em que o mundo parou para o nosso primeiro beijo?", a: "07/12" },
+        { q: "A palavra que carrega o peso da sua singularidade?", a: "perfeita" },
+        { q: "A moldura do seu rosto que baila com o vento?", a: "cabelo" }, 
+        { q: "A característica que te faz ser a calmaria no meu caos?", a: "abraco" }, 
+        { q: "O som que é a melodia perfeita para os meus ouvidos?", a: "voz" },
+        { q: "O silêncio onde nossas almas conversam sem palavras?", a: "abraco" }, 
+        { q: "O culpado roxo e gelado da nossa primeira conversa?", a: "acai" },
+        { q: "O que eu fabriquei em segredo para ser seu companheiro?", a: "elefante" },
+    ];
+
+    // MOTOR DO ESPAÇO PROFUNDO
+    const canvas = document.getElementById('spaceCanvas');
+    const ctx = canvas.getContext('2d');
+    let w, h, stars = [];
+    let speedMult = 1;
+
+    function initSpace() {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+        stars = [];
+        for(let i=0; i<400; i++) stars.push({ x: Math.random()*w - w/2, y: Math.random()*h - h/2, z: Math.random()*w, o: Math.random() });
+    }
+
+    function drawSpace() {
+        ctx.fillStyle = "black";
+        ctx.fillRect(0,0,w,h);
+        ctx.translate(w/2, h/2);
+        stars.forEach(s => {
+            s.z -= 2 * speedMult;
+            if(s.z <= 0) s.z = w;
+            let x = s.x * (w / s.z);
+            let y = s.y * (h / s.z);
+            let r = 1.5 * (w / s.z);
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI*2);
+            ctx.fillStyle = `rgba(255,255,255,${s.o})`;
+            ctx.fill();
+        });
+        ctx.setTransform(1,0,0,1,0,0);
+        requestAnimationFrame(drawSpace);
+    }
+    initSpace(); drawSpace(); window.addEventListener('resize', initSpace);
+
+    // LÓGICA DE CARREGAMENTO COM DOBRA ESPACIAL
+    let chargeVal = 0, cInt;
+    window.startCharge = () => {
+        sfx.click.play();
+        cInt = setInterval(() => {
+            chargeVal += 1.5;
+            speedMult = 1 + (chargeVal / 5); // Estrelas aceleram
+            document.getElementById('fill').style.transform = `scale(${chargeVal/100})`;
+            if(chargeVal >= 100) {
+                clearInterval(cInt);
+                anime({ targets: '#prologue', opacity: 0, complete: () => {
+                    document.getElementById('prologue').style.display='none';
+                    document.getElementById('main-stage').style.display='flex';
+                    speedMult = 1;
+                    anime({ targets: '#main-stage', opacity: 1 });
+                }});
+            }
+        }, 30);
+    };
+    window.stopCharge = () => { clearInterval(cInt); chargeVal = 0; speedMult = 1; document.getElementById('fill').style.transform = 'scale(0)'; };
+
+    // TREMOR NO FINAL
+    let fCharge = 0, fInt;
+    window.startFinalCharge = () => {
+        fInt = setInterval(() => {
+            fCharge += 1;
+            document.getElementById('final-fill').style.transform = `scale(${fCharge/100})`;
+            if(fCharge > 50) document.body.classList.add('glitch-shake');
+            if(fCharge >= 100) { clearInterval(fInt); document.body.classList.remove('glitch-shake'); revealEverything(); }
+        }, 50);
+    };
+    window.stopFinalCharge = () => { clearInterval(fInt); fCharge = 0; document.body.classList.remove('glitch-shake'); document.getElementById('final-fill').style.transform = 'scale(0)'; };
+
+    // (Lógica do Puzzle e Firebase mantida igual ao anterior para estabilidade)
+    const grid = document.getElementById('puzzle-grid');
+    const tiles = []; 
+    for(let i=0; i<9; i++){
+        const t = document.createElement('div'); 
+        t.className = 'tile';
+        t.style.backgroundPosition = `-${(i%3)*100}px -${Math.floor(i/3)*100}px`;
+        t.style.left = `${Math.random()*400-200}px`; t.style.top = `${Math.random()*400-200}px`;
+        grid.appendChild(t); tiles.push(t);
+    }
+
+    onSnapshot(userRef, (s) => { if(s.exists()) sync(s.data()); });
+
+    function sync(data) {
+        const f = data.faseAtual;
+        tiles.forEach((t, i) => {
+            if(i < f) {
+                t.classList.add('unlocked');
+                anime({ targets: t, left: (i%3)*100, top: Math.floor(i/3)*100, duration: 1500 });
+            }
+        });
+        if(f >= 9) { triggerHorizon(); return; }
+        const currentCycle = getCycle();
+        const isLocked = (data.ultimaConclusao === new Date().toLocaleDateString() && data.ultimoCiclo === currentCycle);
+        if(isLocked) {
+            document.getElementById('unlock-btn').disabled = true;
+            document.getElementById('user-ans').style.display = 'none';
+            document.getElementById('cycle-label').innerText = "Ciclo Concluído";
+            document.getElementById('quest-text').innerHTML = `<span style="color:var(--gold)">Aguarde o próximo ciclo solar.</span>`;
+        } else {
+            document.getElementById('cycle-label').innerText = `Fragmento ${f+1} - ${currentCycle}`;
+            document.getElementById('quest-text').innerText = QUESTS[f].q;
+        }
+    }
+
+    window.verify = async () => {
+        const val = document.getElementById('user-ans').value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        const snap = await getDoc(userRef);
+        if(val === QUESTS[snap.data().faseAtual].a) {
+            sfx.success.play();
+            await updateDoc(userRef, { faseAtual: increment(1), ultimaConclusao: new Date().toLocaleDateString(), ultimoCiclo: getCycle() });
+            document.getElementById('user-ans').value = "";
+        }
+    };
+
+    function triggerHorizon() {
+        document.getElementById('main-card').innerHTML = `<div class="label">Horizonte de Eventos</div><div class="desc">Realidade instável. Segure o núcleo para estabilizar.</div><div class="charge-btn" style="margin: 0 auto;" onmousedown="startFinalCharge()" onmouseup="stopFinalCharge()" ontouchstart="startFinalCharge()" ontouchend="stopFinalCharge()"><div id="final-fill" class="charge-fill"></div><span style="font-size: 0.6rem; color:#000; font-weight:bold; z-index:10">ESTABILIZAR</span></div>`;
+    }
+
+    function revealEverything() {
+        sfx.reveal.play();
+        document.getElementById('main-card').style.opacity = '0';
+        tiles.forEach((t, i) => {
+            anime({ targets: t, left: (i%3)*100, top: Math.floor(i/3)*100, duration: 2000, complete: () => t.classList.add('final-reveal') });
+        });
+        setTimeout(() => {
+            const fMsg = document.getElementById('final-msg');
+            fMsg.innerHTML = `<h1 style="font-family:'Cormorant Garamond'; color:var(--gold); font-size: 3rem;">Larissa</h1><p style="letter-spacing: 5px;">VOCÊ É UM UNIVERSO INTEIRO.</p>`;
+            anime({ targets: '#final-msg', opacity: 1, translateY: [50, 0], duration: 3000 });
+            confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 }, colors: ['#d4af37', '#ffffff'] });
+        }, 2100);
+    }
+
+    function getCycle() {
+        const h = new Date().getHours();
+        return (h >= 5 && h < 12) ? "Amanhecer" : (h >= 12 && h < 18) ? "Entardecer" : "Luar"; 
+    }
+
+    window.initAudio = () => { if(!sfx.bg.playing()) sfx.bg.play(); };
+
+    const INTRO_LIST = [
+        ["Existem bilhões de galáxias no vácuo...", "Mas só uma frequência faz minha alma vibrar: a sua."],
+        ["As estrelas morrem para gerar poeira cósmica...", "E o universo se organizou apenas para você existir."],
+        ["A luz leva anos para atravessar o abismo...", "Mas meu pensamento te alcança em um microssegundo."],
+        ["Constelações tentam desenhar o seu rosto...", "Mas faltam estrelas para tamanha perfeição."],
+        ["O vazio do espaço é vasto e silencioso...", "Até que o eco do seu riso preenche o infinito."],
+        ["Orbitando em torno da sua existência...", "Descobri que o meu lar não é um lugar, é você."],
+        ["Mesmo que o sol se apague em um colapso...", "Sua luz interna manteria o meu sistema aquecido."],
+        ["Viajei por buracos de minhoca e fendas no tempo...", "Para provar que em qualquer realidade, eu escolheria você."],
+        ["A gravidade nos mantém presos ao chão...", "Mas a sua essência me faz flutuar além das nebulosas."],
+        ["O mapa estelar é confuso e imenso...", "Mas você é o meu único ponto de referência."]
+    ];
+    let lineIdx = 1;
+    function runStory() {
+        if (lineIdx === 1) {
+            const pair = INTRO_LIST[Math.floor(Math.random() * INTRO_LIST.length)];
+            document.getElementById('line-1').innerText = pair[0];
+            document.getElementById('line-2').innerText = pair[1];
+        }
+        if(lineIdx > 4) { anime({ targets: '#charge-zone', opacity: 1 }); return; }
+        const el = document.getElementById(`line-${lineIdx}`);
+        el.style.display = 'block';
+        anime({ targets: el, opacity: 1, duration: 2000, complete: () => {
+            setTimeout(() => {
+                if(lineIdx < 4) anime({ targets: el, opacity: 0, duration: 1000, complete: () => { el.style.display='none'; lineIdx++; runStory(); }});
+                else { lineIdx++; runStory(); }
+            }, 2500);
+        }});
+    }
+    runStory();
+</script>
+</body>
+</html>
