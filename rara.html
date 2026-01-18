@@ -7,16 +7,12 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=Montserrat:wght@200;400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=Montserrat:wght@200;400;700&family=JetBrains+Mono:wght@300&display=swap" rel="stylesheet">
     <style>
-        :root { --accent: #f8edeb; --gold: #d4af37; --bg: #010103; }
+        :root { --accent: #f8edeb; --gold: #d4af37; --bg: #010103; --error: #ff4d4d; --timer: #50fa7b; }
         body, html { margin: 0; padding: 0; background: var(--bg); color: var(--accent); font-family: 'Montserrat', sans-serif; overflow: hidden; height: 100vh; }
         
-        /* FUNDO ESPAÇO COM DOBRA */
         #nebula { position: fixed; inset: 0; z-index: 1; background: #000; overflow: hidden; }
-        .star-layer { position: absolute; inset: 0; pointer-events: none; }
-
-        /* PROLOGUE */
         #prologue {
             position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.9);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -24,6 +20,31 @@
         }
         .story-line { font-family: 'Cormorant Garamond', serif; font-size: 1.6rem; font-style: italic; opacity: 0; display: none; max-width: 700px; text-shadow: 0 0 15px rgba(255,255,255,0.4); }
         
+        /* TIMER COM TRANSIÇÃO DE TAMANHO */
+        #sync-timer {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--timer);
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px rgba(80, 250, 123, 0.5);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* CLASSE DE TENSÃO MÁXIMA */
+        #sync-timer.overload {
+            font-size: 1.4rem;
+            color: var(--gold);
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.8);
+            margin: 20px 0;
+            animation: pulse-red 1s infinite alternate;
+        }
+
+        @keyframes pulse-red {
+            from { transform: scale(1); opacity: 0.8; }
+            to { transform: scale(1.05); opacity: 1; }
+        }
+
         .charge-btn { 
             width: 100px; height: 100px; border-radius: 50%; border: 1px solid var(--gold);
             display: flex; align-items: center; justify-content: center; position: relative; 
@@ -33,7 +54,6 @@
 
         .stage { position: relative; z-index: 10; height: 100vh; display: none; flex-direction: column; align-items: center; justify-content: center; opacity: 0; }
         
-        /* PUZZLE SEM GRADE */
         .puzzle-container { position: relative; width: 300px; height: 300px; margin-bottom: 40px; }
         .grid-container { position: relative; width: 300px; height: 300px; }
         
@@ -49,7 +69,7 @@
         .tile.unlocked { filter: blur(15px) grayscale(0.8) brightness(0.3); }
         .tile.final-reveal { filter: blur(0) grayscale(0) brightness(1.2) !important; z-index: 100; box-shadow: 0 0 40px rgba(212,175,55,0.3); }
 
-        .card { width: 380px; text-align: center; z-index: 20; background: rgba(0,0,0,0.7); padding: 30px; border-radius: 20px; backdrop-filter: blur(15px); border: 1px solid rgba(212, 175, 55, 0.2); }
+        .card { width: 380px; text-align: center; z-index: 20; background: rgba(0,0,0,0.85); padding: 30px; border-radius: 20px; backdrop-filter: blur(15px); border: 1px solid rgba(212, 175, 55, 0.2); }
         .label { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.1rem; color: var(--gold); letter-spacing: 5px; text-transform: uppercase; }
         .desc { font-size: 0.85rem; color: #b0b0b0; margin: 20px 0; line-height: 2; min-height: 50px; }
         
@@ -57,14 +77,11 @@
             background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; 
             text-align: center; width: 80%; padding: 12px; outline: none; border-radius: 5px; font-family: 'Montserrat';
         }
-        input:focus { border-color: var(--gold); }
         
         .btn { margin-top: 20px; background: var(--gold); border: none; color: #000; padding: 12px 40px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.7rem; text-transform: uppercase; }
         .btn:disabled { background: #1a1a1a; color: #444; }
 
         #final-msg { position: absolute; opacity: 0; text-align: center; z-index: 200; width: 90%; pointer-events: none; }
-
-        /* EFEITO DE TREMOR (GLITCH) */
         .glitch-shake { animation: shake 0.1s infinite; filter: hue-rotate(90deg) contrast(200%); }
         @keyframes shake {
             0% { transform: translate(1px, 1px) rotate(0deg); }
@@ -78,19 +95,17 @@
 </head>
 <body>
 
-<div id="nebula">
-    <canvas id="spaceCanvas"></canvas>
-</div>
+<div id="nebula"><canvas id="spaceCanvas"></canvas></div>
 
 <div id="prologue" onclick="initAudio()">
     <div id="line-1" class="story-line"></div>
     <div id="line-2" class="story-line"></div>
-    <div id="line-3" class="story-line">Aguarde a calibração da alma, Larissa.</div>
-    <div id="line-4" class="story-line">Sinta o pulso do universo.</div>
+    <div id="line-3" class="story-line">Sincronizando realidade...</div>
+    <div id="line-4" class="story-line">Calibrando pulso vital...</div>
     <div id="charge-zone" style="opacity:0">
         <div class="charge-btn" onmousedown="startCharge()" onmouseup="stopCharge()" ontouchstart="startCharge()" ontouchend="stopCharge()">
             <div id="fill" class="charge-fill"></div>
-            <span style="font-size: 0.6rem; font-weight: bold; letter-spacing: 2px; z-index: 10;">ENTRAR</span>
+            <span style="font-size: 0.6rem; font-weight: bold; letter-spacing: 2px; z-index: 10;">ACESSAR</span>
         </div>
     </div>
 </div>
@@ -100,11 +115,13 @@
         <div class="grid-container" id="puzzle-grid"></div>
     </div>
     <div class="card" id="main-card">
+        <div id="sync-timer">SINCRONIA: 00:00:00:000</div>
         <div class="label" id="cycle-label">Sintonizando...</div>
         <div class="desc" id="quest-text">Aguarde...</div>
         <div id="ui-active">
-            <input type="text" id="user-ans" placeholder="QUAL A SENHA?" autocomplete="off">
+            <input type="text" id="user-ans" placeholder="DIGITE AQUI..." autocomplete="off">
             <br><button class="btn" id="unlock-btn" onclick="verify()">Desbloquear Fragmento</button>
+            <div id="error-msg" style="color:var(--error); font-size:0.7rem; margin-top:10px; opacity:0">Frequência incorreta...</div>
         </div>
     </div>
     <div id="final-msg"></div>
@@ -114,7 +131,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // Firebase Config e SFX permanecem iguais
     const firebaseConfig = { apiKey: "AIzaSyCVvR7zIOr30JG-M-0vkQRqZT6DKHPrHuo", authDomain: "projeto-specimen.firebaseapp.com", projectId: "projeto-specimen", storageBucket: "projeto-specimen.firebasestorage.app", messagingSenderId: "527660235211", appId: "1:527660235211:web:9f29491bb713561f50de4e" };
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -124,22 +140,39 @@
         bg: new Howl({ src: ['https://assets.mixkit.co/music/preview/mixkit-deep-space-97.mp3'], loop: true, volume: 0.3 }),
         click: new Howl({ src: ['https://assets.mixkit.co/sfx/preview/mixkit-click-melodic-110.mp3'], volume: 0.4 }),
         success: new Howl({ src: ['https://assets.mixkit.co/sfx/preview/mixkit-unlock-game-notification-253.mp3'], volume: 0.5 }),
-        reveal: new Howl({ src: ['https://assets.mixkit.co/sfx/preview/mixkit-cinematic-mystery-reveal-911.mp3'], volume: 0.8 })
+        reveal: new Howl({ src: ['https://assets.mixkit.co/sfx/preview/mixkit-cinematic-mystery-reveal-911.mp3'], volume: 0.8 }),
+        error: new Howl({ src: ['https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3'], volume: 0.3 })
     };
 
     const QUESTS = [
         { q: "Qual o detalhe em você que é o meu mapa favorito?", a: "olhos" }, 
-        { q: "A data em que o mundo parou para o nosso primeiro beijo?", a: "07/12" },
+        { q: "O dia em que o mundo parou para o nosso primeiro beijo?", a: "07/12" },
         { q: "A palavra que carrega o peso da sua singularidade?", a: "perfeita" },
         { q: "A moldura do seu rosto que baila com o vento?", a: "cabelo" }, 
-        { q: "A característica que te faz ser a calmaria no meu caos?", a: "abraco" }, 
+        { q: "O que em você é o meu melhor lugar no mundo?", a: "abraco" }, 
         { q: "O som que é a melodia perfeita para os meus ouvidos?", a: "voz" },
-        { q: "O silêncio onde nossas almas conversam sem palavras?", a: "abraco" }, 
+        { q: "O que nossas mãos fazem quando o mundo fica barulhento?", a: "entrelaçar" }, 
         { q: "O culpado roxo e gelado da nossa primeira conversa?", a: "acai" },
-        { q: "O que eu fabriquei em segredo para ser seu companheiro?", a: "elefante" },
+        { q: "O animal que eu fabriquei em segredo para te proteger?", a: "elefante" },
     ];
 
-    // MOTOR DO ESPAÇO PROFUNDO
+    // ATUALIZAÇÃO DO TIMER
+    function updateTimer() {
+        const now = new Date();
+        const hours = String(23 - now.getHours()).padStart(2, '0');
+        const mins = String(59 - now.getMinutes()).padStart(2, '0');
+        const secs = String(59 - now.getSeconds()).padStart(2, '0');
+        const ms = String(999 - now.getMilliseconds()).padStart(3, '0');
+        
+        const timerEl = document.getElementById('sync-timer');
+        if(timerEl) {
+            timerEl.innerText = `RESTANTE: ${hours}:${mins}:${secs}:${ms}`;
+        }
+        requestAnimationFrame(updateTimer);
+    }
+    updateTimer();
+
+    // MOTOR ESPACIAL
     const canvas = document.getElementById('spaceCanvas');
     const ctx = canvas.getContext('2d');
     let w, h, stars = [];
@@ -172,13 +205,12 @@
     }
     initSpace(); drawSpace(); window.addEventListener('resize', initSpace);
 
-    // LÓGICA DE CARREGAMENTO COM DOBRA ESPACIAL
     let chargeVal = 0, cInt;
     window.startCharge = () => {
         sfx.click.play();
         cInt = setInterval(() => {
             chargeVal += 1.5;
-            speedMult = 1 + (chargeVal / 5); // Estrelas aceleram
+            speedMult = 1 + (chargeVal / 5);
             document.getElementById('fill').style.transform = `scale(${chargeVal/100})`;
             if(chargeVal >= 100) {
                 clearInterval(cInt);
@@ -193,7 +225,6 @@
     };
     window.stopCharge = () => { clearInterval(cInt); chargeVal = 0; speedMult = 1; document.getElementById('fill').style.transform = 'scale(0)'; };
 
-    // TREMOR NO FINAL
     let fCharge = 0, fInt;
     window.startFinalCharge = () => {
         fInt = setInterval(() => {
@@ -205,7 +236,6 @@
     };
     window.stopFinalCharge = () => { clearInterval(fInt); fCharge = 0; document.body.classList.remove('glitch-shake'); document.getElementById('final-fill').style.transform = 'scale(0)'; };
 
-    // (Lógica do Puzzle e Firebase mantida igual ao anterior para estabilidade)
     const grid = document.getElementById('puzzle-grid');
     const tiles = []; 
     for(let i=0; i<9; i++){
@@ -220,38 +250,59 @@
 
     function sync(data) {
         const f = data.faseAtual;
+        const timerEl = document.getElementById('sync-timer');
+
         tiles.forEach((t, i) => {
             if(i < f) {
                 t.classList.add('unlocked');
                 anime({ targets: t, left: (i%3)*100, top: Math.floor(i/3)*100, duration: 1500 });
             }
         });
+
         if(f >= 9) { triggerHorizon(); return; }
+        
         const currentCycle = getCycle();
         const isLocked = (data.ultimaConclusao === new Date().toLocaleDateString() && data.ultimoCiclo === currentCycle);
+        
         if(isLocked) {
             document.getElementById('unlock-btn').disabled = true;
             document.getElementById('user-ans').style.display = 'none';
-            document.getElementById('cycle-label').innerText = "Ciclo Concluído";
-            document.getElementById('quest-text').innerHTML = `<span style="color:var(--gold)">Aguarde o próximo ciclo solar.</span>`;
+            document.getElementById('cycle-label').innerText = "SINCRONIA BLOQUEADA";
+            document.getElementById('quest-text').innerHTML = `<span style="color:var(--gold)">Fragmento estabilizado. Sistema em resfriamento.</span>`;
+            
+            // AQUI O RELÓGIO FICA GIGANTE
+            timerEl.classList.add('overload');
         } else {
+            document.getElementById('unlock-btn').disabled = false;
+            document.getElementById('user-ans').style.display = 'inline-block';
             document.getElementById('cycle-label').innerText = `Fragmento ${f+1} - ${currentCycle}`;
             document.getElementById('quest-text').innerText = QUESTS[f].q;
+            
+            // VOLTA AO NORMAL SE DESBLOQUEADO
+            timerEl.classList.remove('overload');
         }
     }
 
     window.verify = async () => {
-        const val = document.getElementById('user-ans').value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        const input = document.getElementById('user-ans');
+        const err = document.getElementById('error-msg');
+        const val = input.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         const snap = await getDoc(userRef);
+        
         if(val === QUESTS[snap.data().faseAtual].a) {
             sfx.success.play();
+            err.style.opacity = 0;
             await updateDoc(userRef, { faseAtual: increment(1), ultimaConclusao: new Date().toLocaleDateString(), ultimoCiclo: getCycle() });
-            document.getElementById('user-ans').value = "";
+            input.value = "";
+        } else {
+            sfx.error.play();
+            err.style.opacity = 1;
+            anime({ targets: '#main-card', translateX: [15, -15, 0], duration: 300 });
         }
     };
 
     function triggerHorizon() {
-        document.getElementById('main-card').innerHTML = `<div class="label">Horizonte de Eventos</div><div class="desc">Realidade instável. Segure o núcleo para estabilizar.</div><div class="charge-btn" style="margin: 0 auto;" onmousedown="startFinalCharge()" onmouseup="stopFinalCharge()" ontouchstart="startFinalCharge()" ontouchend="stopFinalCharge()"><div id="final-fill" class="charge-fill"></div><span style="font-size: 0.6rem; color:#000; font-weight:bold; z-index:10">ESTABILIZAR</span></div>`;
+        document.getElementById('main-card').innerHTML = `<div id="sync-timer" class="overload" style="color:var(--error)">COLAPSO IMINENTE</div><div class="label">Horizonte de Eventos</div><div class="desc">A realidade não suporta tamanha perfeição. Segure para estabilizar o núcleo!</div><div class="charge-btn" style="margin: 0 auto;" onmousedown="startFinalCharge()" onmouseup="stopFinalCharge()" ontouchstart="startFinalCharge()" ontouchend="stopFinalCharge()"><div id="final-fill" class="charge-fill"></div><span style="font-size: 0.6rem; color:#000; font-weight:bold; z-index:10">SALVAR</span></div>`;
     }
 
     function revealEverything() {
@@ -262,7 +313,7 @@
         });
         setTimeout(() => {
             const fMsg = document.getElementById('final-msg');
-            fMsg.innerHTML = `<h1 style="font-family:'Cormorant Garamond'; color:var(--gold); font-size: 3rem;">Larissa</h1><p style="letter-spacing: 5px;">VOCÊ É UM UNIVERSO INTEIRO.</p>`;
+            fMsg.innerHTML = `<h1 style="font-family:'Cormorant Garamond'; color:var(--gold); font-size: 3rem;">Larissa</h1><p style="letter-spacing: 5px;">EXCEDE UMA BELEZA RARA.</p>`;
             anime({ targets: '#final-msg', opacity: 1, translateY: [50, 0], duration: 3000 });
             confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 }, colors: ['#d4af37', '#ffffff'] });
         }, 2100);
@@ -270,22 +321,15 @@
 
     function getCycle() {
         const h = new Date().getHours();
-        return (h >= 5 && h < 12) ? "Amanhecer" : (h >= 12 && h < 18) ? "Entardecer" : "Luar"; 
+        return (h >= 5 && h < 12) ? "Protocolo Alpha" : (h >= 12 && h < 18) ? "Protocolo Delta" : "Protocolo Omega"; 
     }
 
     window.initAudio = () => { if(!sfx.bg.playing()) sfx.bg.play(); };
 
     const INTRO_LIST = [
-        ["Existem bilhões de galáxias no vácuo...", "Mas só uma frequência faz minha alma vibrar: a sua."],
-        ["As estrelas morrem para gerar poeira cósmica...", "E o universo se organizou apenas para você existir."],
-        ["A luz leva anos para atravessar o abismo...", "Mas meu pensamento te alcança em um microssegundo."],
-        ["Constelações tentam desenhar o seu rosto...", "Mas faltam estrelas para tamanha perfeição."],
-        ["O vazio do espaço é vasto e silencioso...", "Até que o eco do seu riso preenche o infinito."],
-        ["Orbitando em torno da sua existência...", "Descobri que o meu lar não é um lugar, é você."],
-        ["Mesmo que o sol se apague em um colapso...", "Sua luz interna manteria o meu sistema aquecido."],
-        ["Viajei por buracos de minhoca e fendas no tempo...", "Para provar que em qualquer realidade, eu escolheria você."],
-        ["A gravidade nos mantém presos ao chão...", "Mas a sua essência me faz flutuar além das nebulosas."],
-        ["O mapa estelar é confuso e imenso...", "Mas você é o meu único ponto de referência."]
+        ["Sistemas reiniciando...", "Buscando o centro gravitacional da minha vida..."],
+        ["Escaneando 10^82 átomos no universo...", "Apenas um conjunto deles me interessa: você."],
+        ["Alerta: Níveis de perfeição excedidos.", "Larissa detectada na vizinhança orbital."]
     ];
     let lineIdx = 1;
     function runStory() {
