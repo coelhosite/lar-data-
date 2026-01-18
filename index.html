@@ -204,7 +204,7 @@
                 </div>
                 <div id="mood-feedback"></div>
                 <div id="container-btn-rara" style="display: none; margin-top: 15px; animation: fadeIn 0.8s;">
-                    <a href="rara.html" class="btn-link-especial btn-rara-direto">🌌 ACESSAR INFINITY RARA</a>
+                    <a href="rara.html" class="btn-link-especial btn-rara-direto" onclick="trackRaraClick()">🌌 ACESSAR INFINITY RARA</a>
                 </div>
             </div>
 
@@ -397,6 +397,14 @@
             emoji: emoji
         });
     }
+    
+    function trackRaraClick() {
+        // Registra o clique no banco de dados antes de redirecionar
+        db.ref('monitoramento/visitas_rara').push({
+            data: new Date().toLocaleString('pt-BR'),
+            tipo: "Clique no Botão Radiante"
+        });
+    }
 
     function initScratchCard() {
         const canvas = document.getElementById('scratch-canvas');
@@ -538,10 +546,30 @@
             const root = s.val();
             let html = "";
             
-            // --- PARTE 1: ESTATÍSTICAS ---
-            const cliques = root.monitoramento && root.monitoramento.visitas_carta ? Object.keys(root.monitoramento.visitas_carta).length : 0;
+            // --- PARTE 1: ESTATÍSTICAS (Atualizada) ---
+            const visitasCarta = root.monitoramento && root.monitoramento.visitas_carta ? Object.keys(root.monitoramento.visitas_carta).length : 0;
+            const visitasRara = root.monitoramento && root.monitoramento.visitas_rara ? Object.keys(root.monitoramento.visitas_rara).length : 0;
             const totalRaspadas = root.monitoramento && root.monitoramento.raspadas ? Object.keys(root.monitoramento.raspadas).length : 0;
-            statsContent.innerHTML = `Interações Carta: ${cliques} | <b>Total Raspadinhas: ${totalRaspadas}</b>`;
+            
+            statsContent.innerHTML = `
+                Carta: ${visitasCarta} | 
+                <b style="color: #d4af37;">Infinity Rara: ${visitasRara}</b> | 
+                Raspadinhas: ${totalRaspadas}
+            `;
+            
+                        // Adicione isso logo abaixo do loop das raspadas dentro da função loadTrash
+            if (root.monitoramento && root.monitoramento.visitas_rara) {
+                html += `<div style="color: #d4af37; font-size: 0.7rem; margin: 15px 0 5px 0; letter-spacing: 1px;">🌌 ACESSOS INFINITY RARA:</div>`;
+                html += `<div class="admin-scroll-area" style="max-height: 100px; background: rgba(212, 175, 55, 0.05); border: 1px solid rgba(212, 175, 55, 0.2);">`;
+                
+                const acessosRara = Object.values(root.monitoramento.visitas_rara).reverse();
+                acessosRara.forEach(a => {
+                    html += `<div style="font-size: 0.65rem; padding: 5px; color: #d4af37; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                [${a.data}] - Acessou o Infinito
+                             </div>`;
+                });
+                html += `</div>`;
+            }
 
             // --- PARTE 2: HISTÓRICO DE RASPADINHAS (NOVO) ---
             if (root.monitoramento && root.monitoramento.raspadas) {
