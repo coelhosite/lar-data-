@@ -142,6 +142,25 @@
             color: #fff; border: none; padding: 16px; border-radius: 15px; 
             width: 100%; font-weight: 700; margin-top: 20px; text-transform: uppercase; cursor: pointer;
         }
+        
+        .btn-rara-direto {
+            background: linear-gradient(135deg, #d4af37 0%, #8a6d1d 100%) !important;
+            border: 1px solid #d4af37 !important;
+            color: white !important;
+            font-weight: bold !important;
+            letter-spacing: 2px;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+            display: block;
+            padding: 15px;
+            border-radius: 12px;
+            text-decoration: none;
+            animation: pulseGold 2s infinite;
+        }
+        
+        @keyframes pulseGold {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 10px rgba(212, 175, 55, 0.4); }
+            50% { transform: scale(1.02); box-shadow: 0 0 25px rgba(212, 175, 55, 0.7); }
+        }
 
         @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
@@ -184,6 +203,9 @@
                     <span class="mood-btn" onclick="setMood('Triste/Cansada', '😔')">😔</span>
                 </div>
                 <div id="mood-feedback"></div>
+                <div id="container-btn-rara" style="display: none; margin-top: 15px; animation: fadeIn 0.8s;">
+                    <a href="rara.html" class="btn-link-especial btn-rara-direto">🌌 ACESSAR INFINITY RARA</a>
+                </div>
             </div>
 
             <div style="display: flex; gap: 10px; margin-bottom: 10px;">
@@ -353,9 +375,22 @@
     }
 
     function setMood(mood, emoji) {
-        const feedback = document.getElementById('mood-feedback');
+    const feedback = document.getElementById('mood-feedback');
+    const containerBtnRara = document.getElementById('container-btn-rara');
+    
         feedback.style.display = 'block';
-        feedback.innerText = mood === 'Radiante' ? "Fico feliz por você! ✨" : "Estou aqui contigo. 💜";
+        
+        if (mood === 'Radiante') {
+            feedback.innerText = "Fico muito feliz por você! ✨ Você desbloqueou algo especial:";
+            // Exibe o botão do link rara.html
+            containerBtnRara.style.display = 'block';
+            playConfettiSound(); // Som de celebração
+        } else {
+            feedback.innerText = "Estou aqui contigo. 💜";
+            containerBtnRara.style.display = 'none'; // Garante que suma se mudar o humor
+        }
+    
+        // Envia para o Firebase
         db.ref('monitoramento/humor').push({
             data: new Date().toLocaleString('pt-BR'),
             estado: mood,
