@@ -258,6 +258,12 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     firebase.auth().signInAnonymously();
+    
+    // Registro de "Visto por último" no Banco de Dados
+    const agora = new Date().toLocaleString('pt-BR');
+    db.ref('monitoramento/ultima_leitura').set({
+        data: agora
+    });
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -277,6 +283,8 @@
         noise.connect(filter); filter.connect(gainNode); gainNode.connect(audioCtx.destination);
         noise.start();
     }
+    
+    
 
     function playConfettiSound() {
         if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -546,14 +554,16 @@
             const root = s.val();
             let html = "";
             
-            // --- PARTE 1: ESTATÍSTICAS (Atualizada) ---
+
+            const ultimaLeitura = root.monitoramento && root.monitoramento.ultima_leitura ? root.monitoramento.ultima_leitura.data : "Nenhuma";
             const visitasCarta = root.monitoramento && root.monitoramento.visitas_carta ? Object.keys(root.monitoramento.visitas_carta).length : 0;
             const visitasRara = root.monitoramento && root.monitoramento.visitas_rara ? Object.keys(root.monitoramento.visitas_rara).length : 0;
             const totalRaspadas = root.monitoramento && root.monitoramento.raspadas ? Object.keys(root.monitoramento.raspadas).length : 0;
             
             statsContent.innerHTML = `
+                <div style="margin-bottom: 5px; color: #4ade80;">✓ Último acesso dela: ${ultimaLeitura}</div>
                 Carta: ${visitasCarta} | 
-                <b style="color: #d4af37;">Infinity Rara: ${visitasRara}</b> | 
+                <b style="color: #d4af37;">Rara: ${visitasRara}</b> | 
                 Raspadinhas: ${totalRaspadas}
             `;
             
