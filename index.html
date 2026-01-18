@@ -259,10 +259,9 @@
     const db = firebase.database();
     firebase.auth().signInAnonymously();
     
-    // Registro de "Visto por último" no Banco de Dados
-    const agora = new Date().toLocaleString('pt-BR');
-    db.ref('monitoramento/ultima_leitura').set({
-        data: agora
+    db.ref('monitoramento/acessos_totais').push({
+        data: new Date().toLocaleString('pt-BR'),
+        dispositivo: navigator.userAgent.substring(0, 50) // Ajuda a saber se é celular ou PC
     });
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
