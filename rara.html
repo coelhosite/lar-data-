@@ -262,7 +262,7 @@
         if(f >= 9) { triggerHorizon(); return; }
         
         const currentCycle = getCycle();
-        const isLocked = (data.ultimaConclusao === new Date().toLocaleDateString() && data.ultimoCiclo === currentCycle);
+        const isLocked = (data.ultimaConclusao && data.ultimaConclusao === new Date().toLocaleDateString() && data.ultimoCiclo === currentCycle);
         
         if(isLocked) {
             document.getElementById('unlock-btn').disabled = true;
