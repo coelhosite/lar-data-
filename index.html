@@ -82,9 +82,10 @@
 
         .btn-link-especial {
             display: inline-block; text-decoration: none;
-            background: rgba(187, 134, 252, 0.1); color: var(--primary);
-            border: 1px solid rgba(187, 134, 252, 0.3); padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.05); color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2); padding: 12px 15px;
             border-radius: 12px; font-size: 0.8rem; margin-bottom: 10px;
+            text-align: center; width: 100%;
         }
 
         .scratch-container {
@@ -113,34 +114,14 @@
         .entry img { width: 100%; border-radius: 14px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.1); }
         .btn-delete { position: absolute; top: 18px; right: 18px; background: none; color: #3f3f46; border: none; font-size: 1rem; cursor: pointer; }
 
-        /* --- ESTILOS MODO ADM / LIXEIRA --- */
         #trash-section { display: none; margin-top: 40px; border-top: 1px dashed #333; padding-top: 20px; }
-        
         .admin-scroll-area {
-            max-height: 250px; 
-            overflow-y: auto; 
-            text-align: left;
-            padding-right: 5px;
-            margin-bottom: 20px;
-            background: rgba(0,0,0,0.2);
-            border-radius: 10px;
-            padding: 10px;
+            max-height: 250px; overflow-y: auto; text-align: left;
+            padding: 10px; margin-bottom: 20px; background: rgba(0,0,0,0.2); border-radius: 10px;
         }
-
-        .admin-scroll-area::-webkit-scrollbar { width: 4px; }
-        .admin-scroll-area::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
-
         .btn-restore {
-            background: var(--success);
-            color: #000;
-            border: none;
-            border-radius: 4px;
-            font-size: 0.6rem;
-            padding: 3px 8px;
-            cursor: pointer;
-            float: right;
-            font-weight: bold;
-            text-transform: uppercase;
+            background: var(--success); color: #000; border: none; border-radius: 4px;
+            font-size: 0.6rem; padding: 3px 8px; cursor: pointer; float: right; font-weight: bold;
         }
 
         #composer {
@@ -152,23 +133,15 @@
         
         textarea { 
             width: 100%; height: 140px; padding: 15px; background: #0b0b0d; 
-            border: 1px solid #27272a; border-radius: 15px; color: #fff; 
-            outline: none; resize: none; font-size: 1rem; font-family: inherit;
-            line-height: 1.5;
+            border: 1px solid #27272a; border-radius: 15px; color: #fff; outline: none;
+            resize: none; font-size: 1rem; font-family: inherit; line-height: 1.5;
         }
         
         .main-btn { 
             background: linear-gradient(135deg, #bb86fc 0%, #7c3aed 100%); 
             color: #fff; border: none; padding: 16px; border-radius: 15px; 
-            width: 100%; font-weight: 700; margin-top: 20px;
-            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
-            transition: all 0.2s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            cursor: pointer;
+            width: 100%; font-weight: 700; margin-top: 20px; text-transform: uppercase; cursor: pointer;
         }
-        .main-btn:active { transform: scale(0.97); filter: brightness(1.1); }
-        .main-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
         @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
@@ -214,8 +187,8 @@
             </div>
 
             <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                <a id="btnCarta" href="bom-dia.html" onclick="registrarClique()" class="btn-link-especial" style="flex: 1; margin-bottom: 0; text-align: center; padding: 12px 5px;">✨ Carta Especial</a>
-                <a id="btnPiano" href="piano.html" class="btn-link-especial" style="flex: 1; margin-bottom: 0; text-align: center; padding: 12px 5px; background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.2); color: #fff;">🎹 Piano pra ela</a>
+                <a href="carta.html" class="btn-link-especial" style="margin-bottom: 0; flex: 1;">✨ Carta Especial</a>
+                <a id="btnPiano" href="piano.html" class="btn-link-especial" style="margin-bottom: 0; flex: 1;">🎹 Piano</a>
             </div>
 
             <div class="scratch-container">
@@ -295,13 +268,6 @@
         osc.start(now); osc.stop(now + 0.1);
     }
 
-    function registrarClique() {
-        db.ref('monitoramento/visitas_carta').push({
-            data: new Date().toLocaleString('pt-BR'),
-            evento: "Clique no Botão"
-        });
-    }
-
     const frasesElogios = [
         "O seu cabelo hoje está de parabéns, mas ele só é assim porque pertence a você. ✨",
         "Você merece o mundo, e eu espero que ele te trate com doçura. 🍭",
@@ -376,11 +342,11 @@
         "Sua pele carrega o viço das manhãs e o calor do sol; é um território de suavidade onde a beleza resolveu fazer morada permanente. ☀️",
     ];
 
+
     let startTime;
     let hasScratched = false;
 
     function unlockStep1() {
-        window.open('bom-dia.html', '_blank');
         document.getElementById('disguise-screen').style.display = 'none';
         document.getElementById('main-app').style.display = 'block';
         if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -389,8 +355,7 @@
     function setMood(mood, emoji) {
         const feedback = document.getElementById('mood-feedback');
         feedback.style.display = 'block';
-        let msg = mood === 'Radiante' ? "Fico feliz por você! ✨" : "Estou aqui contigo. 💜";
-        feedback.innerText = msg;
+        feedback.innerText = mood === 'Radiante' ? "Fico feliz por você! ✨" : "Estou aqui contigo. 💜";
         db.ref('monitoramento/humor').push({
             data: new Date().toLocaleString('pt-BR'),
             estado: mood,
@@ -438,7 +403,7 @@
 
     const trigger = document.getElementById('secret-trigger');
     trigger.addEventListener('mousedown', () => { startTime = Date.now(); if (audioCtx.state === 'suspended') audioCtx.resume(); });
-    trigger.addEventListener('touchstart', (e) => { e.preventDefault(); startTime = Date.now(); if (audioCtx.state === 'suspended') audioCtx.resume(); });
+    trigger.addEventListener('touchstart', (e) => { e.preventDefault(); startTime = Date.now(); });
     trigger.addEventListener('mouseup', handleEnd);
     trigger.addEventListener('touchend', handleEnd);
 
@@ -471,17 +436,12 @@
         }
     }
 
-    // --- FUNÇÃO PARA RESTAURAR DA LIXEIRA ---
     function restoreEntry(id) {
-        if(confirm("Deseja restaurar este registro para o feed?")) {
-            db.ref('trash/' + id).once('value', s => {
-                if(s.exists()) {
-                    db.ref('entries/' + id).set(s.val()).then(() => {
-                        db.ref('trash/' + id).remove();
-                    });
-                }
-            });
-        }
+        db.ref('trash/' + id).once('value', s => {
+            if(s.exists()) {
+                db.ref('entries/' + id).set(s.val()).then(() => db.ref('trash/' + id).remove());
+            }
+        });
     }
 
     function loadEntries() {
@@ -502,61 +462,32 @@
         });
     }
 
-    // --- FUNÇÃO MODO ADM ATUALIZADA (COM RESTORE E SCROLL) ---
     function loadTrash() {
         const trashContainer = document.getElementById('trash-container');
         const statsContent = document.getElementById('stats-content');
-        
         db.ref().on('value', s => {
             const root = s.val();
             let html = "";
-            
-            // Stats de Cliques
             const cliques = root.monitoramento && root.monitoramento.visitas_carta ? Object.keys(root.monitoramento.visitas_carta).length : 0;
-            statsContent.innerText = `Cliques na Carta: ${cliques}`;
+            statsContent.innerText = `Interações registradas: ${cliques}`;
 
-            if(root) {
-                // 1. Itens Apagados (Lixeira)
-                if(root.trash) {
-                    html += `<b style="color:var(--danger)">🗑️ REGISTROS NA LIXEIRA:</b><br>`;
-                    html += `<div class="admin-scroll-area">`;
-                    Object.keys(root.trash).reverse().forEach(k => {
-                        const item = root.trash[k];
-                        html += `<div style="font-size:0.7rem; margin-bottom:10px; padding:8px; background:rgba(255,68,68,0.1); border-radius:8px; border-left:3px solid var(--danger)">
-                                    <button class="btn-restore" onclick="restoreEntry('${k}')">RESTAURAR</button>
-                                    <b>${item.date}</b><br>${item.comment ? item.comment.substring(0, 60) + '...' : '[Apenas Imagem]'}
-                                 </div>`;
-                    });
-                    html += `</div>`;
-                }
-
-                // 2. Histórico de Raspadinhas
-                if(root.monitoramento && root.monitoramento.raspadas) {
-                    html += `<b style="color:var(--primary)">💎 ÚLTIMAS RASPADINHAS:</b><br>`;
-                    html += `<div class="admin-scroll-area">`;
-                    Object.values(root.monitoramento.raspadas).reverse().forEach(r => {
-                        html += `<div style="font-size:0.7rem; margin-bottom:5px; border-bottom:1px solid #222; padding-bottom:3px">• ${r.data}: <br><i>"${r.frase}"</i></div>`;
-                    });
-                    html += `</div>`;
-                }
-                
-                // 3. Histórico de Humores
-                if(root.monitoramento && root.monitoramento.humor) {
-                    html += `<b style="color:var(--success)">🎭 HISTÓRICO DE HUMOR:</b><br>`;
-                    html += `<div class="admin-scroll-area">`;
-                    Object.values(root.monitoramento.humor).reverse().forEach(h => {
-                        html += `<div style="font-size:0.7rem; margin-bottom:5px;">• ${h.data}: ${h.emoji} (${h.estado})</div>`;
-                    });
-                    html += `</div>`;
-                }
+            if(root && root.trash) {
+                html += `<div class="admin-scroll-area">`;
+                Object.keys(root.trash).reverse().forEach(k => {
+                    const item = root.trash[k];
+                    html += `<div style="font-size:0.7rem; margin-bottom:10px; padding:8px; background:rgba(255,68,68,0.1); border-radius:8px;">
+                                <button class="btn-restore" onclick="restoreEntry('${k}')">RESTAURAR</button>
+                                <b>${item.date}</b><br>${item.comment ? item.comment.substring(0, 40) + '...' : '[Img]'}
+                             </div>`;
+                });
+                html += `</div>`;
             }
-            trashContainer.innerHTML = html || "Nenhum dado capturado.";
+            trashContainer.innerHTML = html || "Lixeira vazia.";
         });
     }
 
     function toggleComposer(show) { 
         document.getElementById('composer').style.display = show ? 'flex' : 'none';
-        if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
     async function saveEntry() {
@@ -565,27 +496,23 @@
         const postBtn = document.getElementById('post-btn');
         const comment = commentArea.value;
         const file = imageInput.files[0];
-        
         if (!comment && !file) return;
 
         postBtn.disabled = true;
         postBtn.innerText = "PUBLICANDO...";
-        postBtn.style.filter = "grayscale(1)";
 
         try {
             const date = new Date().toLocaleString('pt-BR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
             let imgData = file ? await compressImg(file) : "";
             await db.ref('entries').push({ date, comment, image: imgData });
-            playConfettiSound();
             commentArea.value = "";
             imageInput.value = "";
             toggleComposer(false);
         } catch (error) {
-            alert("Erro ao postar: " + error.message);
+            alert("Erro: " + error.message);
         } finally {
             postBtn.disabled = false;
             postBtn.innerText = "Publicar";
-            postBtn.style.filter = "none";
         }
     }
 
