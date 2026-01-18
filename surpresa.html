@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Para Você</title>
+    <style>
+        /* Efeito de entrada suave */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        body {
+            background-color: #f4f1ea; /* Cor de papel envelhecido leve */
+            font-family: 'Georgia', serif; /* Fonte mais clássica de carta */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            color: #444;
+        }
+
+        .container {
+            background-color: #fff;
+            max-width: 380px; 
+            width: 100%;
+            padding: 40px 30px;
+            border-radius: 2px; /* Bordas mais retas como papel */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            line-height: 1.8;
+            text-align: left;
+            position: relative;
+            animation: fadeIn 2s ease-out;
+            /* Textura sutil de papel */
+            background-image: linear-gradient(to bottom, rgba(255,255,255,0.8), rgba(255,255,255,0.8)), 
+                              url('https://www.transparenttextures.com/patterns/cream-paper.png');
+        }
+
+        h1 {
+            color: #8e2424; /* Vermelho seco, mais melancólico */
+            font-size: 1.6rem;
+            margin-bottom: 5px;
+            text-align: center;
+            font-weight: normal;
+        }
+
+        .subtitle {
+            font-style: italic;
+            text-align: center;
+            margin-bottom: 30px;
+            color: #777;
+            font-size: 0.9rem;
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid #ddd;
+            margin: 25px auto;
+            width: 50%;
+        }
+
+        p {
+            margin-bottom: 20px;
+            font-size: 1.05rem;
+            text-align: justify;
+        }
+
+        .highlight {
+            color: #8e2424;
+            border-bottom: 1px dotted #8e2424;
+        }
+
+        .final-msg {
+            text-align: center;
+            font-style: italic;
+            margin-top: 30px;
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        /* Otimização Mobile */
+        @media (max-width: 400px) {
+            .container {
+                padding: 30px 20px;
+            }
+            p {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Você me faz sorrir.</h1>
+        <p class="subtitle">Obrigado por ser exatamente quem você é.</p>
+        
+        <hr>
+
+        <p>Já te falei e continuo falando: <span class="highlight">você é a mulher mais linda e perfeita que já conheci.</span> Embora não tenhamos tido tanto contato, você foi e é a mais única.</p>
+        
+        <p>Eu não sei como fazer você sentir algo por mim, e honestamente, nem espero que sinta. Hoje, faço as coisas por você apenas para te ver sorrir e se sentir curada de alguma forma.</p>
+        
+        <p>Confesso que, antes, eu agia para que você me notasse como alguém legal, mas hoje entendo meu lugar. Não posso e nem devo ocupar um espaço que não seja meu. Não quero que se sinta mal achando que eu não entenderia, porque eu entendo, sim.</p>
+        
+        <p>O maior dos meus desejos é ver você sorridente e alegre, como se não existissem mágoas em você. Eu realmente quero te ver bem.</p>
+        
+        <p>Eu percebo como você se sente. Vejo quando faz ou fala algo apenas para não machucar o próximo, e sinto isso através das músicas e Reels que compartilha. Sinto que isso às vezes te consome porque você não consegue ser totalmente o seu "eu".</p>
+        
+        <p>Quero que você faça suas próprias escolhas. Mesmo que haja 1% de opinião alheia, não deixe de ser você por causa dos outros. Você é você!</p>
+        
+        <p>Quanto a mim, não se preocupe: <strong>eu me enquadro como seu melhor amigo</strong>, e para mim isso já é um privilégio enorme.</p>
+        
+        <p>Portanto, fique bem. Faça o seu melhor. Seja sua melhor versão — aquela mais feliz que você já viveu.</p>
+
+          <div class="final-msg">Com todo carinho do mundo. ✨</div>
+
+    </div>
+
+</body>
+</html>
