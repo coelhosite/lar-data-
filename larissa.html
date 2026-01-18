@@ -71,30 +71,22 @@
             color: var(--cor-detalhe);
         }
 
-        /* O "Visto" discreto no final */
-        #status-leitura {
-            font-size: 0.65em;
-            color: #eee; /* Quase invisível */
-            text-align: center;
-            margin-top: 60px;
-            cursor: default;
-        }
-
         .decoracao {
             text-align: center;
             margin-bottom: 20px;
             font-size: 20px;
         }
+        
         .link-estrela {
-    text-decoration: none;
-    color: inherit;
-    cursor: default; /* Mantém o mouse como seta, escondendo o segredo */
-    outline: none;
-}
+            text-decoration: none;
+            color: inherit;
+            cursor: default; 
+            outline: none;
+        }
 
-.link-estrela:active {
-    color: var(--cor-detalhe); /* Brilha brevemente ao ser clicada */
-}
+        .link-estrela:active {
+            color: var(--cor-detalhe); 
+        }
 
         @media (max-width: 600px) {
             .carta { padding: 25px; }
@@ -104,9 +96,9 @@
 <body>
 
 <div class="carta">
-  <div class="decoracao">
-    <a href="surpresa.html" target="_blank" class="link-estrela">✨</a>
-</div>
+    <div class="decoracao">
+        <a href="surpresa.html" target="_blank" class="link-estrela">✨</a>
+    </div>
 
     <p>Oi... Sim! Sou eu de novo. 🙃</p>
 
@@ -133,7 +125,7 @@
 
     <div class="binario-box">
         01001100 01100001 01110010 01101001 01110011 01110011 01100001 (Larissa)<br>
-   <br> 01001100 01101001 01101110 01100100 01100001 (Linda)
+        <br> 01001100 01101001 01101110 01100100 01100001 (Linda)
     </div>
     
     <p>Cada traço era feito com a sua imagem na minha mente e a esperança de ser lembrado.</p>
@@ -166,26 +158,7 @@
     <p>Que seu 2026 seja o melhor ano da sua vida.</p>
 
     <div class="assinatura">Para Larissa, com carinho, Lucas 🙃</div>
-
-    <div id="status-leitura">.</div>
 </div>
-
-<script>
-    // Sistema Discreto de "Visto"
-    const statusLeitura = document.getElementById('status-leitura');
-    const agora = new Date().toLocaleString('pt-BR');
-
-    // 1. Ela vê quando leu pela última vez (armazenado no navegador dela)
-    const ultimaVez = localStorage.getItem('vistoLarissa');
-    if(ultimaVez) {
-        statusLeitura.innerText = "Lido pela última vez em: " + ultimaVez;
-    }
-    localStorage.setItem('vistoLarissa', agora);
-
-    // 2. DICA PARA VOCÊ: Se quiser ser avisado no seu celular quando ela abrir, 
-    // você pode usar um serviço gratuito como o "Webhooks.site" ou "IFTTT" 
-    // e colocar um fetch() aqui. Mas por ora, o código acima já faz o papel de diário dela.
-</script>
 
 </body>
 </html>
