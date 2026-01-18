@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Piano</title>
+    <title>Piano Profissional</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
@@ -33,7 +33,6 @@
         .white { width: var(--w); height: var(--h); background: #fff; border: 1px solid #ccc; border-radius: 0 0 4px 4px; color: #333; z-index: 1; }
         .black { width: 28px; height: 100px; background: #2f3542; margin: 0 -14px; z-index: 2; border-radius: 0 0 3px 3px; color: white; font-size: 8px; }
         
-        /* Nota que deve ser tocada no tutorial */
         .next-note { background: #f1c40f !important; box-shadow: 0 0 15px #f1c40f; color: black !important; z-index: 3; }
         .playing { background: #2ecc71 !important; }
 
@@ -100,6 +99,19 @@
             <div class="key white extra-keys hidden" data-note="880.00" id="A5">LA</div>
             <div class="key black extra-keys hidden" data-note="932.33" id="As5"></div>
             <div class="key white extra-keys hidden" data-note="987.77" id="B5">SI</div>
+
+            <div class="key white extra-keys hidden" data-note="1046.50" id="C6">DO</div>
+            <div class="key black extra-keys hidden" data-note="1108.73" id="Cs6"></div>
+            <div class="key white extra-keys hidden" data-note="1174.66" id="D6">RE</div>
+            <div class="key black extra-keys hidden" data-note="1244.51" id="Ds6"></div>
+            <div class="key white extra-keys hidden" data-note="1318.51" id="E6">MI</div>
+            <div class="key white extra-keys hidden" data-note="1396.91" id="F6">FA</div>
+            <div class="key black extra-keys hidden" data-note="1479.98" id="Fs6"></div>
+            <div class="key white extra-keys hidden" data-note="1567.98" id="G6">SOL</div>
+            <div class="key black extra-keys hidden" data-note="1661.22" id="Gs6"></div>
+            <div class="key white extra-keys hidden" data-note="1760.00" id="A6">LA</div>
+            <div class="key black extra-keys hidden" data-note="1864.66" id="As6"></div>
+            <div class="key white extra-keys hidden" data-note="1975.53" id="B6">SI</div>
         </div>
 
         <div id="recordings-container">
@@ -128,7 +140,6 @@
     let activeTimeouts = [];
     let cloudRecordings = {};
 
-    // VARIÁVEIS DO TUTORIAL
     let tutorialActive = false;
     let tutorialStep = 0;
     const twinkleSong = [
@@ -169,7 +180,6 @@
             setTimeout(() => el.classList.remove('playing'), 200);
         }
 
-        // LÓGICA DE PROGRESSÃO DO TUTORIAL
         if (tutorialActive && isUser && id === twinkleSong[tutorialStep].id) {
             tutorialStep++;
             if (tutorialStep < twinkleSong.length) {
@@ -245,7 +255,6 @@
         document.getElementById('target-note').innerText = "TUTORIAL";
     }
 
-    // FUNÇÕES DO TUTORIAL RESTAURADAS
     function startTutorial() {
         stopAll();
         tutorialActive = true;
@@ -269,8 +278,12 @@
         document.querySelectorAll('.key').forEach(k => k.classList.remove('next-note'));
     }
 
+    // Inicializa os eventos em todas as teclas (incluindo as novas)
     document.querySelectorAll('.key').forEach(key => {
-        const action = (e) => { e.preventDefault(); playNote(parseFloat(key.dataset.note), key.id); };
+        const action = (e) => { 
+            e.preventDefault(); 
+            playNote(parseFloat(key.dataset.note), key.id); 
+        };
         key.addEventListener('mousedown', action);
         key.addEventListener('touchstart', action);
     });
