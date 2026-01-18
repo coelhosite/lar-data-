@@ -554,29 +554,37 @@
             let html = "";
             
 
-            // 1. Pegamos todos os acessos (se não existir, retorna objeto vazio)
-const todosAcessos = (root.monitoramento && root.monitoramento.acessos_totais) || {};
-
-// 2. Transformamos em uma lista e pegamos os últimos 5 (para não inundar a tela)
-const ultimosCinco = Object.values(todosAcessos).reverse().slice(0, 5);
-
-// 3. Criamos o HTML para esses acessos
-const listaHTML = ultimosCinco.map(acesso => 
-    `<div style="font-size: 0.8em; color: #94a3b8;">• ${acesso.data} (${acesso.dispositivo})</div>`
-).join('');
-
-// 4. Montamos o statsContent
-statsContent.innerHTML = `
-    <div style="margin-bottom: 10px; border-bottom: 1px solid #334155; padding-bottom: 5px;">
-        <strong style="color: #4ade80;">🕒 Histórico Recente:</strong>
-        ${listaHTML || '<div style="color: #64748b;">Nenhum acesso</div>'}
-    </div>
-    <div style="margin-top: 5px;">
-        Carta: ${visitasCarta} | 
-        <b style="color: #d4af37;">Rara: ${visitasRara}</b> | 
-        Raspadinhas: ${totalRaspadas}
-    </div>
-`;
+           // 1. Pega os dados com segurança (se não existir, vira objeto vazio {})
+            const monitoramento = root.monitoramento || {};
+            const acessos_totais = monitoramento.acessos_totais || {};
+            const visitas_carta = monitoramento.visitas_carta || {};
+            const visitas_rara = monitoramento.visitas_rara || {};
+            const raspadas = monitoramento.raspadas || {};
+            
+            // 2. Transforma o histórico em uma lista e pega os 3 últimos
+            const listaAcessos = Object.values(acessos_totais).reverse().slice(0, 3);
+            
+            // 3. Cria as linhas de texto para o histórico
+            let historicoHTML = "";
+            listaAcessos.forEach(item => {
+                historicoHTML += `<div style="font-size: 11px; color: #94a3b8;">• ${item.data}</div>`;
+            });
+            
+            // 4. Se não tiver nada, coloca um aviso
+            if (historicoHTML === "") historicoHTML = "<div>Nenhum acesso registrado</div>";
+            
+            // 5. Atualiza a tela
+            statsContent.innerHTML = `
+                <div style="margin-bottom: 8px; border-bottom: 1px solid #334155; padding-bottom: 5px;">
+                    <strong style="color: #4ade80; font-size: 12px;">🕒 ÚLTIMOS ACESSOS:</strong>
+                    ${historicoHTML}
+                </div>
+                <div style="font-size: 13px;">
+                    Carta: ${Object.keys(visitas_carta).length} | 
+                    <span style="color: #d4af37;">Rara: ${Object.keys(visitas_rara).length}</span> | 
+                    Raspadas: ${Object.keys(raspadas).length}
+                </div>
+            `;
             
                         // Adicione isso logo abaixo do loop das raspadas dentro da função loadTrash
             if (root.monitoramento && root.monitoramento.visitas_rara) {
