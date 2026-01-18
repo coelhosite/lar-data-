@@ -369,7 +369,33 @@
         const container = canvas.parentElement;
         const ctx = canvas.getContext('2d');
         let isDrawing = false;
-        const frase = frasesElogios[Math.floor(Math.random() * frasesElogios.length)];
+        
+        // Reinicia a trava de log para a nova raspadinha
+        hasScratched = false;
+
+        // --- LÓGICA DE NÃO REPETIÇÃO ---
+        let usedIndices = JSON.parse(localStorage.getItem('usedFrases') || '[]'); 
+        
+        // Se usou todas as frases, limpa o histórico para recomeçar o ciclo
+        if (usedIndices.length >= frasesElogios.length) {
+            usedIndices = [];
+        }
+
+        // Filtra apenas os índices que ainda não foram usados
+        let availableIndices = [];
+        for (let i = 0; i < frasesElogios.length; i++) {
+            if (!usedIndices.includes(i)) availableIndices.push(i);
+        }
+
+        // Sorteia um índice da lista de disponíveis
+        const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+        const frase = frasesElogios[randomIndex];
+
+        // Salva o índice usado no navegador dela
+        usedIndices.push(randomIndex);
+        localStorage.setItem('usedFrases', JSON.stringify(usedIndices));
+        // -------------------------------
+
         textElement.innerText = frase;
         canvas.width = container.offsetWidth;
         canvas.height = container.offsetHeight;
@@ -383,16 +409,23 @@
         function scratch(e) {
             if (!isDrawing) return;
             playScratchSound();
+
+            // VOLTOU O MONITORAMENTO: Grava no Firebase apenas no primeiro toque da raspagem
             if(!hasScratched) {
-                db.ref('monitoramento/raspadas').push({ data: new Date().toLocaleString('pt-BR'), frase: frase });
+                db.ref('monitoramento/raspadas').push({ 
+                    data: new Date().toLocaleString('pt-BR'), 
+                    frase: frase 
+                });
                 hasScratched = true;
             }
+
             const rect = canvas.getBoundingClientRect();
             const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
             const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
             ctx.globalCompositeOperation = 'destination-out';
             ctx.beginPath(); ctx.arc(x, y, 22, 0, Math.PI * 2); ctx.fill();
         }
+        
         canvas.addEventListener('mousedown', () => isDrawing = true);
         canvas.addEventListener('touchstart', () => isDrawing = true);
         window.addEventListener('mouseup', () => isDrawing = false);
@@ -465,12 +498,34 @@
     function loadTrash() {
         const trashContainer = document.getElementById('trash-container');
         const statsContent = document.getElementById('stats-content');
+
         db.ref().on('value', s => {
             const root = s.val();
             let html = "";
+            
+            // --- PARTE 1: ESTATÍSTICAS ---
             const cliques = root.monitoramento && root.monitoramento.visitas_carta ? Object.keys(root.monitoramento.visitas_carta).length : 0;
-            statsContent.innerText = `Interações registradas: ${cliques}`;
+            const totalRaspadas = root.monitoramento && root.monitoramento.raspadas ? Object.keys(root.monitoramento.raspadas).length : 0;
+            statsContent.innerHTML = `Interações Carta: ${cliques} | <b>Total Raspadinhas: ${totalRaspadas}</b>`;
 
+            // --- PARTE 2: HISTÓRICO DE RASPADINHAS (NOVO) ---
+            if (root.monitoramento && root.monitoramento.raspadas) {
+                html += `<div style="color: var(--primary); font-size: 0.7rem; margin: 15px 0 5px 0; letter-spacing: 1px;">💜 ÚLTIMOS ELOGIOS LIDOS:</div>`;
+                html += `<div class="admin-scroll-area" style="max-height: 150px; background: rgba(187, 134, 252, 0.05); border: 1px solid rgba(187, 134, 252, 0.1);">`;
+                
+                // Pega as últimas 10 raspadas e inverte para a mais recente aparecer primeiro
+                const raspadas = Object.values(root.monitoramento.raspadas).reverse().slice(0, 15);
+                raspadas.forEach(r => {
+                    html += `<div style="font-size: 0.65rem; padding: 5px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <span style="color: #71717a;">[${r.data}]</span><br>
+                                <span style="color: #e4e4e7;">${r.frase}</span>
+                             </div>`;
+                });
+                html += `</div>`;
+            }
+
+            // --- PARTE 3: LIXEIRA (REGISTROS APAGADOS) ---
+            html += `<div style="color: var(--danger); font-size: 0.8rem; letter-spacing: 2px; margin: 20px 0 15px 0; text-align: center;">🗑️ LIXEIRA</div>`;
             if(root && root.trash) {
                 html += `<div class="admin-scroll-area">`;
                 Object.keys(root.trash).reverse().forEach(k => {
@@ -481,8 +536,11 @@
                              </div>`;
                 });
                 html += `</div>`;
+            } else {
+                html += `<div style="font-size: 0.7rem; opacity: 0.5; text-align: center;">Lixeira vazia.</div>`;
             }
-            trashContainer.innerHTML = html || "Lixeira vazia.";
+            
+            trashContainer.innerHTML = html;
         });
     }
 
