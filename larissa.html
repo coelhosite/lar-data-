@@ -160,5 +160,77 @@
     <div class="assinatura">Para Larissa, com carinho, Lucas 🙃</div>
 </div>
 
+
+    <style>
+    /* Configuração visual das estrelas */
+    .estrela-cadente {
+        position: fixed;
+        top: -50px; /* Começa totalmente fora da tela */
+        color: #d88a8a;
+        font-size: 20px;
+        user-select: none;
+        pointer-events: none;
+        z-index: 9999;
+        animation: cair linear forwards;
+    }
+
+    /* Animação de queda */
+    @keyframes cair {
+        0% {
+            transform: translateY(0) rotate(0deg);
+            opacity: 0;
+        }
+        10% {
+            opacity: 0.8;
+        }
+        90% {
+            opacity: 0.8;
+        }
+        100% {
+            transform: translateY(110vh) rotate(360deg);
+            opacity: 0;
+        }
+    }
+</style>
+
+<script>
+    function dispararChuva() {
+        const quantidade = 50; // Quantas estrelas vão cair
+        const corpo = document.body;
+
+        for (let i = 0; i < quantidade; i++) {
+            setTimeout(() => {
+                const estrela = document.createElement('div');
+                estrela.className = 'estrela-cadente';
+                
+                // Tipos de estrelas
+                const modelos = ['✨', '⭐', '🌟'];
+                estrela.innerText = modelos[Math.floor(Math.random() * modelos.length)];
+
+                // Posição horizontal aleatória
+                estrela.style.left = Math.random() * 100 + 'vw';
+                
+                // Tamanhos aleatórios
+                estrela.style.fontSize = Math.random() * (25 - 10) + 10 + 'px';
+
+                // Velocidades diferentes (entre 3s e 6s) para não caírem todas iguais
+                const duracao = Math.random() * 3 + 3;
+                estrela.style.animationDuration = duracao + 's';
+
+                corpo.appendChild(estrela);
+
+                // Remove o elemento após a animação para não pesar o navegador
+                setTimeout(() => {
+                    estrela.remove();
+                }, duracao * 1000);
+
+            }, i * 200); // Cria um intervalo de 200ms entre o surgimento de cada uma
+        }
+    }
+
+    // Inicia assim que a página carregar
+    window.addEventListener('load', dispararChuva);
+</script>
+
 </body>
 </html>
