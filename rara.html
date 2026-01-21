@@ -249,39 +249,43 @@
     onSnapshot(userRef, (s) => { if(s.exists()) sync(s.data()); });
 
     function sync(data) {
-        const f = data.faseAtual;
-        const timerEl = document.getElementById('sync-timer');
+    const f = data.faseAtual;
+    const timerEl = document.getElementById('sync-timer');
 
-        tiles.forEach((t, i) => {
-            if(i < f) {
-                t.classList.add('unlocked');
-                anime({ targets: t, left: (i%3)*100, top: Math.floor(i/3)*100, duration: 1500 });
-            }
-        });
-
-        if(f >= 9) { triggerHorizon(); return; }
-        
-        const currentCycle = getCycle();
-        const isLocked = (data.ultimaConclusao && data.ultimaConclusao === new Date().toLocaleDateString() && data.ultimoCiclo === currentCycle);
-        
-        if(isLocked) {
-            document.getElementById('unlock-btn').disabled = true;
-            document.getElementById('user-ans').style.display = 'none';
-            document.getElementById('cycle-label').innerText = "SINCRONIA BLOQUEADA";
-            document.getElementById('quest-text').innerHTML = `<span style="color:var(--gold)">Fragmento estabilizado. Sistema em resfriamento.</span>`;
-            
-            // AQUI O RELÓGIO FICA GIGANTE
-            timerEl.classList.add('overload');
-        } else {
-            document.getElementById('unlock-btn').disabled = false;
-            document.getElementById('user-ans').style.display = 'inline-block';
-            document.getElementById('cycle-label').innerText = `Fragmento ${f+1} - ${currentCycle}`;
-            document.getElementById('quest-text').innerText = QUESTS[f].q;
-            
-            // VOLTA AO NORMAL SE DESBLOQUEADO
-            timerEl.classList.remove('overload');
+    tiles.forEach((t, i) => {
+        if(i < f) {
+            t.classList.add('unlocked');
+            anime({ targets: t, left: (i%3)*100, top: Math.floor(i/3)*100, duration: 1500 });
         }
+    });
+
+    if(f >= 9) { triggerHorizon(); return; }
+    
+    // --- NOVA LÓGICA DE 1 HORA ---
+    let isLocked = false;
+    if (data.ultimaConclusao) {
+        // Converte o timestamp do Firebase para milissegundos
+        const ultimaVez = data.ultimaConclusao.toDate ? data.ultimaConclusao.toDate().getTime() : 0;
+        const agora = new Date().getTime();
+        const umaHoraEmMs = 60 * 60 * 1000; 
+        isLocked = (agora - ultimaVez) < umaHoraEmMs;
     }
+    // -----------------------------
+    
+    if(isLocked) {
+        document.getElementById('unlock-btn').disabled = true;
+        document.getElementById('user-ans').style.display = 'none';
+        document.getElementById('cycle-label').innerText = "SISTEMA EM RESFRIAMENTO";
+        document.getElementById('quest-text').innerHTML = `<span style="color:var(--gold)">Fragmento estabilizado. Aguarde a recalibragem do núcleo.</span>`;
+        timerEl.classList.add('overload');
+    } else {
+        document.getElementById('unlock-btn').disabled = false;
+        document.getElementById('user-ans').style.display = 'inline-block';
+        document.getElementById('cycle-label').innerText = `Fragmento ${f+1} - Sincronia Ativa`;
+        document.getElementById('quest-text').innerText = QUESTS[f].q;
+        timerEl.classList.remove('overload');
+    }
+}
 
     window.verify = async () => {
         const input = document.getElementById('user-ans');
@@ -295,7 +299,7 @@
             err.style.opacity = 0;
             await updateDoc(userRef, { 
                 faseAtual: increment(1), 
-                ultimaConclusao: new Date().toLocaleDateString(), 
+                ultimaConclusao: new Date(), // Salva o horário exato com segundos
                 ultimoCiclo: getCycle() 
             });
             input.value = "";
