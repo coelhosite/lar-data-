@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Monitoramento - RARA</title>
+    <style>
+        body { background: #050505; color: #d4af37; font-family: 'Courier New', monospace; padding: 20px; }
+        h2 { border-bottom: 1px solid #d4af37; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: rgba(20,20,20,0.8); }
+        th, td { border: 1px solid #333; padding: 12px; text-align: left; }
+        th { background: #111; color: #fff; text-transform: uppercase; font-size: 0.8rem; }
+        tr:nth-child(even) { background: #0a0a0a; }
+        .tentativa { color: #ff4d4d; font-weight: bold; }
+        .data { color: #888; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <h2>Relatório de Sincronia - Tentativas Incorretas</h2>
+    <div id="status">Conectando ao banco de dados...</div>
+    <table id="logs-table">
+        <thead>
+            <tr>
+                <th>Data/Hora</th>
+                <th>Fase</th>
+                <th>Pergunta</th>
+                <th>O que ela digitou</th>
+            </tr>
+        </thead>
+        <tbody id="log-body"></tbody>
+    </table>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCVvR7zIOr30JG-M-0vkQRqZT6DKHPrHuo", 
+            authDomain: "projeto-specimen.firebaseapp.com", 
+            projectId: "projeto-specimen", 
+            storageBucket: "projeto-specimen.firebasestorage.app", 
+            messagingSenderId: "527660235211", 
+            appId: "1:527660235211:web:9f29491bb713561f50de4e" 
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Escuta os erros em tempo real
+        const q = query(collection(db, "logs_erros"), orderBy("data", "desc"));
+        
+        onSnapshot(q, (snapshot) => {
+            const tbody = document.getElementById('log-body');
+            document.getElementById('status').innerText = `Total de erros registrados: ${snapshot.size}`;
+            tbody.innerHTML = "";
+            
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const dataFormatada = data.data ? data.data.toDate().toLocaleString('pt-BR') : "Processando...";
+                
+                const row = `<tr>
+                    <td class="data">${dataFormatada}</td>
+                    <td>${data.fase}</td>
+                    <td>${data.pergunta}</td>
+                    <td class="tentativa">${data.tentativa}</td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        });
+    </script>
+</body>
+</html>
