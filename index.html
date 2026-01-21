@@ -406,19 +406,24 @@
     }
 
     function initScratchCard() {
-        const canvas = document.getElementById('scratch-canvas');
-        const textElement = document.getElementById('scratch-text-element');
-        const container = canvas.parentElement;
-        const ctx = canvas.getContext('2d');
-        let isDrawing = false;
-        
-        // Reinicia a trava de log para a nova raspadinha
-        hasScratched = false;
+    const canvas = document.getElementById('scratch-canvas');
+    const textElement = document.getElementById('scratch-text-element');
+    const container = canvas.parentElement;
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    
+    // Reinicia a trava de log para a nova raspadinha
+    hasScratched = false;
 
-        // --- LÓGICA DE NÃO REPETIÇÃO ---
-        let usedIndices = JSON.parse(localStorage.getItem('usedFrases') || '[]'); 
-        
-        // Se usou todas as frases, limpa o histórico para recomeçar o ciclo
+    // --- LÓGICA DE NÃO REPETIÇÃO COM INÍCIO FIXO ---
+    let usedIndices = JSON.parse(localStorage.getItem('usedFrases') || '[]'); 
+    let randomIndex;
+
+    // GARANTE O PRIMEIRO ELOGIO: Se não houver histórico de uso, força o índice 0
+    if (usedIndices.length === 0) {
+        randomIndex = 0;
+    } else {
+        // Se já usou todas as frases, limpa o histórico para recomeçar o ciclo
         if (usedIndices.length >= frasesElogios.length) {
             usedIndices = [];
         }
@@ -430,51 +435,53 @@
         }
 
         // Sorteia um índice da lista de disponíveis
-        const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-        const frase = frasesElogios[randomIndex];
-
-        // Salva o índice usado no navegador dela
-        usedIndices.push(randomIndex);
-        localStorage.setItem('usedFrases', JSON.stringify(usedIndices));
-        // -------------------------------
-
-        textElement.innerText = frase;
-        canvas.width = container.offsetWidth;
-        canvas.height = container.offsetHeight;
-        ctx.fillStyle = '#27272a';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#bb86fc';
-        ctx.font = 'bold 12px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('RASPE UM ELOGIO 💜', canvas.width/2, canvas.height/2 + 5);
-        
-        function scratch(e) {
-            if (!isDrawing) return;
-            playScratchSound();
-
-            // VOLTOU O MONITORAMENTO: Grava no Firebase apenas no primeiro toque da raspagem
-            if(!hasScratched) {
-                db.ref('monitoramento/raspadas').push({ 
-                    data: new Date().toLocaleString('pt-BR'), 
-                    frase: frase 
-                });
-                hasScratched = true;
-            }
-
-            const rect = canvas.getBoundingClientRect();
-            const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
-            const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
-            ctx.globalCompositeOperation = 'destination-out';
-            ctx.beginPath(); ctx.arc(x, y, 22, 0, Math.PI * 2); ctx.fill();
-        }
-        
-        canvas.addEventListener('mousedown', () => isDrawing = true);
-        canvas.addEventListener('touchstart', () => isDrawing = true);
-        window.addEventListener('mouseup', () => isDrawing = false);
-        window.addEventListener('touchend', () => isDrawing = false);
-        canvas.addEventListener('mousemove', scratch);
-        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); scratch(e); });
+        randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
     }
+
+    const frase = frasesElogios[randomIndex];
+
+    // Salva o índice usado no navegador dela
+    usedIndices.push(randomIndex);
+    localStorage.setItem('usedFrases', JSON.stringify(usedIndices));
+    // -----------------------------------------------
+
+    textElement.innerText = frase;
+    canvas.width = container.offsetWidth;
+    canvas.height = container.offsetHeight;
+    ctx.fillStyle = '#27272a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#bb86fc';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('RASPE UM ELOGIO 💜', canvas.width/2, canvas.height/2 + 5);
+    
+    function scratch(e) {
+        if (!isDrawing) return;
+        playScratchSound();
+
+        // Grava no Firebase apenas no primeiro toque da raspagem
+        if(!hasScratched) {
+            db.ref('monitoramento/raspadas').push({ 
+                data: new Date().toLocaleString('pt-BR'), 
+                frase: frase 
+            });
+            hasScratched = true;
+        }
+
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
+        const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.beginPath(); ctx.arc(x, y, 22, 0, Math.PI * 2); ctx.fill();
+    }
+    
+    canvas.addEventListener('mousedown', () => isDrawing = true);
+    canvas.addEventListener('touchstart', () => isDrawing = true);
+    window.addEventListener('mouseup', () => isDrawing = false);
+    window.addEventListener('touchend', () => isDrawing = false);
+    canvas.addEventListener('mousemove', scratch);
+    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); scratch(e); });
+}
 
     const trigger = document.getElementById('secret-trigger');
     trigger.addEventListener('mousedown', () => { startTime = Date.now(); if (audioCtx.state === 'suspended') audioCtx.resume(); });
