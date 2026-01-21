@@ -157,19 +157,36 @@
     ];
 
     // ATUALIZAÇÃO DO TIMER
-    function updateTimer() {
-        const now = new Date();
-        const hours = String(23 - now.getHours()).padStart(2, '0');
-        const mins = String(59 - now.getMinutes()).padStart(2, '0');
-        const secs = String(59 - now.getSeconds()).padStart(2, '0');
-        const ms = String(999 - now.getMilliseconds()).padStart(3, '0');
-        
-        const timerEl = document.getElementById('sync-timer');
-        if(timerEl) {
-            timerEl.innerText = `RESTANTE: ${hours}:${mins}:${secs}:${ms}`;
+    async function updateTimer() {
+    const timerEl = document.getElementById('sync-timer');
+    if (!timerEl) return;
+
+    const snap = await getDoc(userRef);
+    const data = snap.data();
+    
+    if (data && data.ultimaConclusao) {
+        const ultimaVez = data.ultimaConclusao.toDate().getTime();
+        const agora = new Date().getTime();
+        const umaHoraEmMs = 60 * 60 * 1000;
+        const tempoPassado = agora - ultimaVez;
+        const restante = umaHoraEmMs - tempoPassado;
+
+        if (restante > 0) {
+            // Se ainda estiver no bloqueio de 1 hora
+            const mins = String(Math.floor((restante % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
+            const secs = String(Math.floor((restante % (1000 * 60)) / 1000)).padStart(2, '0');
+            const ms = String(restante % 1000).padStart(3, '0');
+            
+            timerEl.innerText = `RECALIBRANDO: 00:${mins}:${secs}:${ms}`;
+            requestAnimationFrame(updateTimer);
+            return;
         }
-        requestAnimationFrame(updateTimer);
     }
+
+    // Se não houver bloqueio ou o tempo já passou
+    timerEl.innerText = "SINCRO ATIVA: 00:00:00:000";
+    requestAnimationFrame(updateTimer);
+}
     updateTimer();
 
     // MOTOR ESPACIAL
