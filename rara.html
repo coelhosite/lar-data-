@@ -284,43 +284,45 @@
     }
 
     window.verify = async () => {
-    const input = document.getElementById('user-ans');
-    const err = document.getElementById('error-msg');
-    const val = input.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-    const snap = await getDoc(userRef);
-    const faseAtual = snap.data().faseAtual;
-    
-    if(val === QUESTS[faseAtual].a) {
-        // --- LOGICA DE SUCESSO (MANTIDA) ---
-        sfx.success.play();
-        err.style.opacity = 0;
-        await updateDoc(userRef, { 
-            faseAtual: increment(1), 
-            ultimaConclusao: new Date().toLocaleDateString(), 
-            ultimoCiclo: getCycle() 
-        });
-        input.value = "";
-    } else {
-        // --- O SEGREDO: LOGICA DE ERRO ---
-        sfx.error.play();
-        err.style.opacity = 1;
+        const input = document.getElementById('user-ans');
+        const err = document.getElementById('error-msg');
+        const val = input.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        const snap = await getDoc(userRef);
+        const faseAtual = snap.data().faseAtual;
         
-        // Envia o erro para o Firebase antes de tremer a tela
-        if(val.length > 0) {
-            const timestamp = new Date().toLocaleString();
-            const logErro = `${timestamp} | Fase ${faseAtual + 1}: ${val}`;
-            
-            // Usamos arrayUnion para criar uma lista de erros sem sobrescrever
-            import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js").then(async ({ arrayUnion }) => {
-                await updateDoc(userRef, {
-                    tentativas_incorretas: arrayUnion(logErro)
-                });
+        if(val === QUESTS[faseAtual].a) {
+            sfx.success.play();
+            err.style.opacity = 0;
+            await updateDoc(userRef, { 
+                faseAtual: increment(1), 
+                ultimaConclusao: new Date().toLocaleDateString(), 
+                ultimoCiclo: getCycle() 
             });
+            input.value = "";
+        } else {
+            sfx.error.play();
+            err.style.opacity = 1;
+            
+            // --- SISTEMA DE LOG SECRETO ---
+            if(val.length > 0) {
+                try {
+                    // Importamos o addDoc para criar um novo registro de erro
+                    const { collection, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                    await addDoc(collection(db, "logs_erros"), {
+                        pergunta: QUESTS[faseAtual].q,
+                        tentativa: val,
+                        fase: faseAtual + 1,
+                        data: serverTimestamp()
+                    });
+                } catch (e) {
+                    console.error("Erro ao logar:", e);
+                }
+            }
+            // ------------------------------
+    
+            anime({ targets: '#main-card', translateX: [15, -15, 0], duration: 300 });
         }
-
-        anime({ targets: '#main-card', translateX: [15, -15, 0], duration: 300 });
-    }
-};
+    };
 
     function triggerHorizon() {
         document.getElementById('main-card').innerHTML = `<div id="sync-timer" class="overload" style="color:var(--error)">COLAPSO IMINENTE</div><div class="label">Horizonte de Eventos</div><div class="desc">A realidade não suporta tamanha perfeição. Segure para estabilizar o núcleo!</div><div class="charge-btn" style="margin: 0 auto;" onmousedown="startFinalCharge()" onmouseup="stopFinalCharge()" ontouchstart="startFinalCharge()" ontouchend="stopFinalCharge()"><div id="final-fill" class="charge-fill"></div><span style="font-size: 0.6rem; color:#000; font-weight:bold; z-index:10">SALVAR</span></div>`;
