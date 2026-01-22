@@ -20,7 +20,6 @@
         }
         .story-line { font-family: 'Cormorant Garamond', serif; font-size: 1.6rem; font-style: italic; opacity: 0; display: none; max-width: 700px; text-shadow: 0 0 15px rgba(255,255,255,0.4); }
         
-        /* TIMER COM TRANSIÇÃO DE TAMANHO */
         #sync-timer {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.85rem;
@@ -31,9 +30,8 @@
             transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        /* CLASSE DE TENSÃO MÁXIMA */
         #sync-timer.overload {
-            font-size: 1.4rem;
+            font-size: 1.2rem;
             color: var(--gold);
             text-shadow: 0 0 20px rgba(212, 175, 55, 0.8);
             margin: 20px 0;
@@ -129,7 +127,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = { apiKey: "AIzaSyCVvR7zIOr30JG-M-0vkQRqZT6DKHPrHuo", authDomain: "projeto-specimen.firebaseapp.com", projectId: "projeto-specimen", storageBucket: "projeto-specimen.firebasestorage.app", messagingSenderId: "527660235211", appId: "1:527660235211:web:9f29491bb713561f50de4e" };
     const app = initializeApp(firebaseConfig);
@@ -146,7 +144,7 @@
 
     const QUESTS = [
         { q: "Qual o detalhe em você que é o meu mapa favorito?", a: "olhos" }, 
-        { q: "Um apelido seu:", a: "Lariê" },
+        { q: "Um apelido seu:", a: "lariê" },
         { q: "A palavra que carrega o peso da sua singularidade?", a: "perfeita" },
         { q: "A moldura do seu rosto que baila com o vento?", a: "cabelo" }, 
         { q: "O que em você é o meu melhor lugar no mundo?", a: "abraco" }, 
@@ -156,18 +154,30 @@
         { q: "O animal criado na madrugada para te fazer alegre, por algum tempo?", a: "elefante" },
     ];
 
-    // ATUALIZAÇÃO DO TIMER
-    function updateTimer() {
-        const now = new Date();
-        const hours = String(23 - now.getHours()).padStart(2, '0');
-        const mins = String(59 - now.getMinutes()).padStart(2, '0');
-        const secs = String(59 - now.getSeconds()).padStart(2, '0');
-        const ms = String(999 - now.getMilliseconds()).padStart(3, '0');
-        
+    // ATUALIZAÇÃO DO TIMER (LÓGICA DE 1 HORA)
+    async function updateTimer() {
         const timerEl = document.getElementById('sync-timer');
-        if(timerEl) {
-            timerEl.innerText = `RESTANTE: ${hours}:${mins}:${secs}:${ms}`;
+        if (!timerEl) return;
+
+        const snap = await getDoc(userRef);
+        const data = snap.data();
+        
+        if (data && data.ultimaConclusao && typeof data.ultimaConclusao !== 'string') {
+            const ultimaVez = data.ultimaConclusao.toDate().getTime();
+            const agora = new Date().getTime();
+            const umaHoraEmMs = 60 * 60 * 1000;
+            const restante = umaHoraEmMs - (agora - ultimaVez);
+
+            if (restante > 0) {
+                const mins = String(Math.floor((restante / 1000 / 60) % 60)).padStart(2, '0');
+                const secs = String(Math.floor((restante / 1000) % 60)).padStart(2, '0');
+                const ms = String(restante % 1000).padStart(3, '0');
+                timerEl.innerText = `RECALIBRANDO: 00:${mins}:${secs}:${ms}`;
+                requestAnimationFrame(updateTimer);
+                return;
+            }
         }
+        timerEl.innerText = "SINCRO ATIVA: 00:00:00:000";
         requestAnimationFrame(updateTimer);
     }
     updateTimer();
@@ -225,17 +235,6 @@
     };
     window.stopCharge = () => { clearInterval(cInt); chargeVal = 0; speedMult = 1; document.getElementById('fill').style.transform = 'scale(0)'; };
 
-    let fCharge = 0, fInt;
-    window.startFinalCharge = () => {
-        fInt = setInterval(() => {
-            fCharge += 1;
-            document.getElementById('final-fill').style.transform = `scale(${fCharge/100})`;
-            if(fCharge > 50) document.body.classList.add('glitch-shake');
-            if(fCharge >= 100) { clearInterval(fInt); document.body.classList.remove('glitch-shake'); revealEverything(); }
-        }, 50);
-    };
-    window.stopFinalCharge = () => { clearInterval(fInt); fCharge = 0; document.body.classList.remove('glitch-shake'); document.getElementById('final-fill').style.transform = 'scale(0)'; };
-
     const grid = document.getElementById('puzzle-grid');
     const tiles = []; 
     for(let i=0; i<9; i++){
@@ -261,24 +260,24 @@
 
         if(f >= 9) { triggerHorizon(); return; }
         
-        const currentCycle = getCycle();
-        const isLocked = (data.ultimaConclusao && data.ultimaConclusao === new Date().toLocaleDateString() && data.ultimoCiclo === currentCycle);
+        let isLocked = false;
+        if (data.ultimaConclusao && typeof data.ultimaConclusao !== 'string') {
+            const ultimaVez = data.ultimaConclusao.toDate().getTime();
+            const agora = new Date().getTime();
+            isLocked = (agora - ultimaVez) < (60 * 60 * 1000);
+        }
         
         if(isLocked) {
             document.getElementById('unlock-btn').disabled = true;
             document.getElementById('user-ans').style.display = 'none';
-            document.getElementById('cycle-label').innerText = "SINCRONIA BLOQUEADA";
-            document.getElementById('quest-text').innerHTML = `<span style="color:var(--gold)">Fragmento estabilizado. Sistema em resfriamento.</span>`;
-            
-            // AQUI O RELÓGIO FICA GIGANTE
+            document.getElementById('cycle-label').innerText = "RESFRIAMENTO ATIVO";
+            document.getElementById('quest-text').innerHTML = `<span style="color:var(--gold)">Fragmento estabilizado. Aguarde a recalibragem.</span>`;
             timerEl.classList.add('overload');
         } else {
             document.getElementById('unlock-btn').disabled = false;
             document.getElementById('user-ans').style.display = 'inline-block';
-            document.getElementById('cycle-label').innerText = `Fragmento ${f+1} - ${currentCycle}`;
+            document.getElementById('cycle-label').innerText = `Fragmento ${f+1} - Sincronia Estável`;
             document.getElementById('quest-text').innerText = QUESTS[f].q;
-            
-            // VOLTA AO NORMAL SE DESBLOQUEADO
             timerEl.classList.remove('overload');
         }
     }
@@ -288,22 +287,45 @@
         const err = document.getElementById('error-msg');
         const val = input.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         const snap = await getDoc(userRef);
+        const fase = snap.data().faseAtual;
         
-        if(val === QUESTS[snap.data().faseAtual].a) {
+        if(val === QUESTS[fase].a) {
             sfx.success.play();
             err.style.opacity = 0;
-            await updateDoc(userRef, { faseAtual: increment(1), ultimaConclusao: new Date().toLocaleDateString(), ultimoCiclo: getCycle() });
+            await updateDoc(userRef, { 
+                faseAtual: increment(1), 
+                ultimaConclusao: new Date() 
+            });
             input.value = "";
         } else {
             sfx.error.play();
             err.style.opacity = 1;
+            if(val.length > 0) {
+                await addDoc(collection(db, "logs_erros"), {
+                    fase: fase + 1,
+                    pergunta: QUESTS[fase].q,
+                    tentativa: val,
+                    data: serverTimestamp()
+                });
+            }
             anime({ targets: '#main-card', translateX: [15, -15, 0], duration: 300 });
         }
     };
 
     function triggerHorizon() {
-        document.getElementById('main-card').innerHTML = `<div id="sync-timer" class="overload" style="color:var(--error)">COLAPSO IMINENTE</div><div class="label">Horizonte de Eventos</div><div class="desc">A realidade não suporta tamanha perfeição. Segure para estabilizar o núcleo!</div><div class="charge-btn" style="margin: 0 auto;" onmousedown="startFinalCharge()" onmouseup="stopFinalCharge()" ontouchstart="startFinalCharge()" ontouchend="stopFinalCharge()"><div id="final-fill" class="charge-fill"></div><span style="font-size: 0.6rem; color:#000; font-weight:bold; z-index:10">SALVAR</span></div>`;
+        document.getElementById('main-card').innerHTML = `<div id="sync-timer" class="overload" style="color:var(--error)">COLAPSO IMINENTE</div><div class="label">Horizonte de Eventos</div><div class="desc">A realidade não suporta tamanha perfeição. Segure para estabilizar!</div><div class="charge-btn" style="margin: 0 auto;" onmousedown="startFinalCharge()" onmouseup="stopFinalCharge()" ontouchstart="startFinalCharge()" ontouchend="stopFinalCharge()"><div id="final-fill" class="charge-fill"></div><span style="font-size: 0.6rem; color:#000; font-weight:bold; z-index:10">SALVAR</span></div>`;
     }
+
+    let fCharge = 0, fInt;
+    window.startFinalCharge = () => {
+        fInt = setInterval(() => {
+            fCharge += 1;
+            document.getElementById('final-fill').style.transform = `scale(${fCharge/100})`;
+            if(fCharge > 50) document.body.classList.add('glitch-shake');
+            if(fCharge >= 100) { clearInterval(fInt); document.body.classList.remove('glitch-shake'); revealEverything(); }
+        }, 50);
+    };
+    window.stopFinalCharge = () => { clearInterval(fInt); fCharge = 0; document.body.classList.remove('glitch-shake'); document.getElementById('final-fill').style.transform = 'scale(0)'; };
 
     function revealEverything() {
         sfx.reveal.play();
@@ -317,11 +339,6 @@
             anime({ targets: '#final-msg', opacity: 1, translateY: [50, 0], duration: 3000 });
             confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 }, colors: ['#d4af37', '#ffffff'] });
         }, 2100);
-    }
-
-    function getCycle() {
-        const h = new Date().getHours();
-        return (h >= 5 && h < 12) ? "Protocolo Alpha" : (h >= 12 && h < 18) ? "Protocolo Delta" : "Protocolo Omega"; 
     }
 
     window.initAudio = () => { if(!sfx.bg.playing()) sfx.bg.play(); };
