@@ -165,7 +165,7 @@
         if (data && data.ultimaConclusao && typeof data.ultimaConclusao !== 'string') {
             const ultimaVez = data.ultimaConclusao.toDate().getTime();
             const agora = new Date().getTime();
-            const umaHoraEmMs = 60 * 60 * 1000;
+            const umaHoraEmMs = 5 * 60 * 1000;
             const restante = umaHoraEmMs - (agora - ultimaVez);
 
             if (restante > 0) {
@@ -264,7 +264,7 @@
         if (data.ultimaConclusao && typeof data.ultimaConclusao !== 'string') {
             const ultimaVez = data.ultimaConclusao.toDate().getTime();
             const agora = new Date().getTime();
-            isLocked = (agora - ultimaVez) < (60 * 60 * 1000);
+            isLocked = (agora - ultimaVez) < (5 * 60 * 1000);
         }
         
         if(isLocked) {
