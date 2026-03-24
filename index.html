@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Carregando...</title>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<script>
+  // COLE SUAS CONFIGURAÇÕES DO FIREBASE AQUI:
+  const firebaseConfig = {
+      apiKey: "AIzaSyAiwLZG2g_3S7pLkdXQtYqz14rTgd1FPOg",
+      authDomain: "meudiario-59cba.firebaseapp.com",
+      databaseURL: "https://meudiario-59cba-default-rtdb.firebaseio.com",
+      projectId: "meudiario-59cba",
+      storageBucket: "meudiario-59cba.firebasestorage.app",
+      messagingSenderId: "426502564208",
+      appId: "1:426502564208:web:07839ac5ffd480f95547b5"
+    };
+
+
+  // Inicializa o Firebase
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+
+  // 1. Registra o acesso no banco de dados
+  const novoAcesso = database.ref('acessos_antigos').push();
+  
+  novoAcesso.set({
+    data: new Date().toLocaleString("pt-BR"),
+    user_agent: navigator.userAgent, // Informações do navegador/dispositivo
+    url_origem: window.location.href
+  }).then(() => {
+    // 2. Após registrar, redireciona para o link novo
+    window.location.href = "https://coelhosite.github.io/lar-data-/99index.html";
+  }).catch((error) => {
+    // Se der erro no Firebase, redireciona mesmo assim para a pessoa não ficar travada
+    window.location.href = "https://coelhosite.github.io/lar-data-/99index.html";
+  });
+</script>
+
+<p style="font-family: sans-serif; text-align: center; margin-top: 50px;">
+    Carregando conteúdo...
+</p>
+
+</body>
+</html>
