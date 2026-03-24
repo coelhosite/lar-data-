@@ -106,21 +106,34 @@ const totalDiv = document.getElementById("total");
 let registros = [];
 
 // 🔥 CONVERTER DATA (resolve tudo)
-function parseData(data) {
+function parseData(data, timestamp) {
+  if (!data && timestamp) {
+    return new Date(timestamp);
+  }
+
   if (!data) return null;
 
-  // ISO (Firestore)
+  // 🔹 ISO (Firestore)
   if (typeof data === "string" && data.includes("T")) {
     return new Date(data);
   }
 
-  // BR (Realtime DB)
+  // 🔹 BR (Realtime DB)
   if (typeof data === "string") {
     const partes = data.split(" ");
-    if (partes.length < 2) return null;
 
     const [dia, mes, ano] = partes[0].split("/");
-    const hora = partes[1];
+
+    let hora = "00:00:00"; // padrão
+
+    if (partes[1]) {
+      hora = partes[1];
+
+      // completa se faltar segundos
+      if (hora.length === 5) {
+        hora += ":00";
+      }
+    }
 
     return new Date(`${ano}-${mes}-${dia}T${hora}`);
   }
