@@ -105,46 +105,45 @@ const totalDiv = document.getElementById("total");
 
 let registros = [];
 
-// 🔥 CONVERTER DATA (resolve tudo)
+// 🔥 PARSE UNIVERSAL (ANTI BUG)
 function parseData(data, timestamp) {
-  if (!data && timestamp) {
-    return new Date(timestamp);
-  }
+  try {
+    // prioridade: timestamp
+    if (timestamp) return new Date(timestamp);
 
-  if (!data) return null;
+    if (!data) return null;
 
-  // 🔹 ISO (Firestore)
-  if (typeof data === "string" && data.includes("T")) {
-    return new Date(data);
-  }
-
-  // 🔹 BR (Realtime DB)
-  if (typeof data === "string") {
-    const partes = data.split(" ");
-
-    const [dia, mes, ano] = partes[0].split("/");
-
-    let hora = "00:00:00"; // padrão
-
-    if (partes[1]) {
-      hora = partes[1];
-
-      // completa se faltar segundos
-      if (hora.length === 5) {
-        hora += ":00";
-      }
+    // ISO
+    if (typeof data === "string" && data.includes("T")) {
+      return new Date(data);
     }
 
-    return new Date(`${ano}-${mes}-${dia}T${hora}`);
-  }
+    // BR
+    if (typeof data === "string") {
+      const partes = data.split(" ");
+      const [dia, mes, ano] = partes[0].split("/");
 
-  return null;
+      let hora = "00:00:00";
+
+      if (partes[1]) {
+        hora = partes[1];
+        if (hora.length === 5) hora += ":00";
+      }
+
+      return new Date(`${ano}-${mes}-${dia}T${hora}`);
+    }
+
+    return null;
+
+  } catch {
+    return null;
+  }
 }
 
 // 🔥 TEMPO RELATIVO
-function tempoRelativo(data) {
-  const d = parseData(data);
-  if (!d) return "sem data";
+function tempoRelativo(data, timestamp) {
+  const d = parseData(data, timestamp);
+  if (!d || isNaN(d)) return "sem data";
 
   const diff = (Date.now() - d) / 1000;
 
@@ -167,21 +166,23 @@ function renderTudo() {
 
   registros
     .sort((a, b) => {
-      const da = parseData(a.data)?.getTime() || 0;
-      const db = parseData(b.data)?.getTime() || 0;
+      const da = parseData(a.data, a.timestamp)?.getTime() || 0;
+      const db = parseData(b.data, b.timestamp)?.getTime() || 0;
       return db - da;
     })
     .forEach((item) => {
       const div = document.createElement("div");
       div.className = "card";
 
-      const d = parseData(item.data);
-      const dataFormatada = d ? d.toLocaleString("pt-BR") : "sem data";
+      const d = parseData(item.data, item.timestamp);
+      const dataFormatada = d && !isNaN(d)
+        ? d.toLocaleString("pt-BR")
+        : "sem data";
 
       div.innerHTML = `
         <div class="tag">${item.origem}</div>
         <div class="data">
-          📅 ${tempoRelativo(item.data)}
+          📅 ${tempoRelativo(item.data, item.timestamp)}
           <span class="small">(${dataFormatada})</span>
         </div>
         <div class="small">${tipoDispositivo(item.dispositivo)}</div>
