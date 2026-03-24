@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Painel de Acessos</title>
+  <title>Painel PRO</title>
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -72,7 +72,7 @@
 <body>
 
 <header>
-  <h1>📊 Painel Geral</h1>
+  <h1>📊 Painel PRO</h1>
   <div id="total">Carregando...</div>
 </header>
 
@@ -81,7 +81,7 @@
 </div>
 
 <script>
-// 🔹 Firebase 1 (Realtime DB)
+// 🔹 Firebase Realtime
 const app1 = firebase.initializeApp({
   apiKey: "AIzaSyAiwLZG2g_3S7pLkdXQtYqz14rTgd1FPOg",
   authDomain: "meudiario-59cba.firebaseapp.com",
@@ -91,7 +91,7 @@ const app1 = firebase.initializeApp({
 
 const db1 = app1.database();
 
-// 🔹 Firebase 2 (Firestore)
+// 🔹 Firebase Firestore
 const app2 = firebase.initializeApp({
   apiKey: "AIzaSyAgN8SgLnyTJFTcTmKFla6TbqL3Bki2rak",
   authDomain: "peye-22c34.firebaseapp.com",
@@ -104,47 +104,84 @@ const lista = document.getElementById("lista");
 const totalDiv = document.getElementById("total");
 
 let total = 0;
+let registros = [];
 
-// 🔥 CONVERTER DATA PRA PT-BR
-function formatarData(dataISO) {
-  if (!dataISO) return "—";
-  return new Date(dataISO).toLocaleString("pt-BR");
+// 🔥 Detectar tipo de dispositivo
+function tipoDispositivo(ua) {
+  if (!ua) return "Desconhecido";
+  return /mobile/i.test(ua) ? "📱 Celular" : "💻 PC";
 }
 
+// 🔥 Tempo relativo
+function tempoRelativo(dataISO) {
+  const diff = (Date.now() - new Date(dataISO)) / 1000;
 
+  if (diff < 60) return "agora";
+  if (diff < 3600) return Math.floor(diff / 60) + " min atrás";
+  if (diff < 86400) return Math.floor(diff / 3600) + "h atrás";
 
-// 🔥 render
-function render(data, origem) {
-  const div = document.createElement("div");
-  div.className = "card";
+  return new Date(dataISO).toLocaleDateString("pt-BR");
+}
 
-  div.innerHTML = `
-    <div class="tag">${origem}</div>
-    <div class="data">📅 ${formatarData(data.data)}</div>
-    <div class="small">⏱️ ${data.timestamp || ""}</div>
-    <div class="small">📱 ${data.dispositivo || ""}</div>
-  `;
+// 🔥 Renderizar tudo (re-render completo)
+function renderTudo() {
+  lista.innerHTML = "";
 
-  lista.prepend(div);
+  registros
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .forEach((item) => {
+      const div = document.createElement("div");
+      div.className = "card";
+
+      const dataFormatada = new Date(item.data).toLocaleString("pt-BR");
+
+      div.innerHTML = `
+        <div class="tag">${item.origem}</div>
+        <div class="data">
+          📅 ${tempoRelativo(item.data)}
+          <span class="small">(${dataFormatada})</span>
+        </div>
+        <div class="small">${tipoDispositivo(item.dispositivo)}</div>
+      `;
+
+      lista.appendChild(div);
+    });
+
+  totalDiv.innerText = `Total: ${registros.length} acessos`;
 }
 
 // 🔹 Realtime DB
 db1.ref("acessos_antigos").on("child_added", (snap) => {
-  total++;
-  render(snap.val(), "lar-data");
-  totalDiv.innerText = `Total: ${total} acessos`;
+  const data = snap.val();
+
+  registros.push({
+    ...data,
+    origem: "lar-data"
+  });
+
+  renderTudo();
 });
 
 // 🔹 Firestore
 db2.collection("acessos_eye").onSnapshot((snapshot) => {
   snapshot.docChanges().forEach((change) => {
     if (change.type === "added") {
-      total++;
-      render(change.doc.data(), "perfect-eye");
-      totalDiv.innerText = `Total: ${total} acessos`;
+      const data = change.doc.data();
+
+      registros.push({
+        ...data,
+        origem: "perfect-eye"
+      });
+
+      renderTudo();
     }
   });
 });
+
+// 🔥 ATUALIZA TEMPO A CADA 30s
+setInterval(() => {
+  renderTudo();
+}, 30000);
 </script>
 
 </body>
