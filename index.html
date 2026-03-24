@@ -10,50 +10,53 @@
 <body>
 
 <div style="font-family: sans-serif; text-align: center; margin-top: 100px;">
-    <p>Carregando conteúdo...</p>
+    <p>Verificando conexão...</p>
 </div>
 
 <script>
-  // 1. SUAS CONFIGURAÇÕES (Verifique se o databaseURL termina com .firebaseio.com)
-    const firebaseConfig = {
-      apiKey: "AIzaSyAiwLZG2g_3S7pLkdXQtYqz14rTgd1FPOg",
-      authDomain: "meudiario-59cba.firebaseapp.com",
-      databaseURL: "https://meudiario-59cba-default-rtdb.firebaseio.com",
-      projectId: "meudiario-59cba",
-      storageBucket: "meudiario-59cba.firebasestorage.app",
-      messagingSenderId: "426502564208",
-      appId: "1:426502564208:web:07839ac5ffd480f95547b5"
-    };
+  // Link de destino
+  const novoLink = "https://coelhosite.github.io/lar-data-/99index.html";
 
-  // Inicializa o Firebase
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+  // Configurações (confirmadas com seu código)
+  const firebaseConfig = {
+    apiKey: "AIzaSyAiwLZG2g_3S7pLkdXQtYqz14rTgd1FPOg",
+    authDomain: "meudiario-59cba.firebaseapp.com",
+    databaseURL: "https://meudiario-59cba-default-rtdb.firebaseio.com",
+    projectId: "meudiario-59cba",
+    storageBucket: "meudiario-59cba.firebasestorage.app",
+    messagingSenderId: "426502564208",
+    appId: "1:426502564208:web:07839ac5ffd480f95547b5"
+  };
 
-  // 2. FUNÇÃO DE REDIRECIONAMENTO (Para não repetir código)
-  function irParaNovoSite() {
-    window.location.href = "https://coelhosite.github.io/lar-data-/99index.html";
+  try {
+    // Inicializa o Firebase
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+
+    // REGISTRO DE ACESSO
+    db.ref('acessos_antigos').push({
+      data: new Date().toLocaleString("pt-BR"),
+      dispositivo: navigator.userAgent,
+      timestamp: Date.now()
+    }).then(() => {
+      console.log("Sucesso no registro");
+      window.location.replace(novoLink);
+    }).catch((err) => {
+      console.error("Erro nas Rules ou Firebase:", err);
+      window.location.replace(novoLink);
+    });
+
+  } catch (e) {
+    console.error("Erro crítico no script:", e);
+    window.location.replace(novoLink);
   }
 
-  // 3. SEGURANÇA: Se o Firebase travar, redireciona em 4 segundos de qualquer jeito
-  const timeoutSeguranca = setTimeout(() => {
-    console.log("Firebase demorou demais, redirecionando por segurança...");
-    irParaNovoSite();
-  }, 4000);
-
-  // 4. TENTATIVA DE REGISTRO
-  db.ref('acessos_antigos').push({
-    data: new Date().toLocaleString("pt-BR"),
-    dispositivo: navigator.userAgent,
-    url: window.location.href
-  })
-  .then(() => {
-    clearTimeout(timeoutSeguranca); // Cancela o timer de erro
-    irParaNovoSite();
-  })
-  .catch((error) => {
-    console.error("Erro ao gravar no Firebase:", error);
-    irParaNovoSite(); // Se der erro de permissão (rules), ele ainda assim redireciona
-  });
+  // FORCE REDIRECT: Se nada acima funcionar em 3 segundos, ele pula fora
+  setTimeout(() => {
+    window.location.replace(novoLink);
+  }, 3000);
 </script>
 
 </body>
