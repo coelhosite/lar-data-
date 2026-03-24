@@ -103,37 +103,67 @@ const db2 = app2.firestore();
 const lista = document.getElementById("lista");
 const totalDiv = document.getElementById("total");
 
-let total = 0;
 let registros = [];
 
-// 🔥 Detectar tipo de dispositivo
-function tipoDispositivo(ua) {
-  if (!ua) return "Desconhecido";
-  return /mobile/i.test(ua) ? "📱 Celular" : "💻 PC";
+// 🔥 CONVERTER DATA (resolve tudo)
+function parseData(data) {
+  if (!data) return null;
+
+  // ISO (Firestore)
+  if (typeof data === "string" && data.includes("T")) {
+    return new Date(data);
+  }
+
+  // BR (Realtime DB)
+  if (typeof data === "string") {
+    const partes = data.split(" ");
+    if (partes.length < 2) return null;
+
+    const [dia, mes, ano] = partes[0].split("/");
+    const hora = partes[1];
+
+    return new Date(`${ano}-${mes}-${dia}T${hora}`);
+  }
+
+  return null;
 }
 
-// 🔥 Tempo relativo
-function tempoRelativo(dataISO) {
-  const diff = (Date.now() - new Date(dataISO)) / 1000;
+// 🔥 TEMPO RELATIVO
+function tempoRelativo(data) {
+  const d = parseData(data);
+  if (!d) return "sem data";
+
+  const diff = (Date.now() - d) / 1000;
 
   if (diff < 60) return "agora";
   if (diff < 3600) return Math.floor(diff / 60) + " min atrás";
   if (diff < 86400) return Math.floor(diff / 3600) + "h atrás";
 
-  return new Date(dataISO).toLocaleDateString("pt-BR");
+  return d.toLocaleDateString("pt-BR");
 }
 
-// 🔥 Renderizar tudo (re-render completo)
+// 🔥 DISPOSITIVO
+function tipoDispositivo(ua) {
+  if (!ua) return "Desconhecido";
+  return /mobile/i.test(ua) ? "📱 Celular" : "💻 PC";
+}
+
+// 🔥 RENDER
 function renderTudo() {
   lista.innerHTML = "";
 
   registros
-    .sort((a, b) => b.timestamp - a.timestamp)
+    .sort((a, b) => {
+      const da = parseData(a.data)?.getTime() || 0;
+      const db = parseData(b.data)?.getTime() || 0;
+      return db - da;
+    })
     .forEach((item) => {
       const div = document.createElement("div");
       div.className = "card";
 
-      const dataFormatada = new Date(item.data).toLocaleString("pt-BR");
+      const d = parseData(item.data);
+      const dataFormatada = d ? d.toLocaleString("pt-BR") : "sem data";
 
       div.innerHTML = `
         <div class="tag">${item.origem}</div>
@@ -152,10 +182,8 @@ function renderTudo() {
 
 // 🔹 Realtime DB
 db1.ref("acessos_antigos").on("child_added", (snap) => {
-  const data = snap.val();
-
   registros.push({
-    ...data,
+    ...snap.val(),
     origem: "lar-data"
   });
 
@@ -166,10 +194,8 @@ db1.ref("acessos_antigos").on("child_added", (snap) => {
 db2.collection("acessos_eye").onSnapshot((snapshot) => {
   snapshot.docChanges().forEach((change) => {
     if (change.type === "added") {
-      const data = change.doc.data();
-
       registros.push({
-        ...data,
+        ...change.doc.data(),
         origem: "perfect-eye"
       });
 
@@ -178,7 +204,7 @@ db2.collection("acessos_eye").onSnapshot((snapshot) => {
   });
 });
 
-// 🔥 ATUALIZA TEMPO A CADA 30s
+// 🔥 Atualiza tempo sozinho
 setInterval(() => {
   renderTudo();
 }, 30000);
