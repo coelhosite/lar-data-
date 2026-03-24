@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Painel de Acessos</title>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: #1e293b;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #334155;
+    }
+
+    .small {
+      color: #94a3b8;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>📊 Acessos ao Link Antigo</h1>
+
+<div id="total"></div>
+<div id="lista"></div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAiwLZG2g_3S7pLkdXQtYqz14rTgd1FPOg",
+  authDomain: "meudiario-59cba.firebaseapp.com",
+  databaseURL: "https://meudiario-59cba-default-rtdb.firebaseio.com",
+  projectId: "meudiario-59cba",
+  storageBucket: "meudiario-59cba.firebasestorage.app",
+  messagingSenderId: "426502564208",
+  appId: "1:426502564208:web:07839ac5ffd480f95547b5"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const lista = document.getElementById("lista");
+const totalDiv = document.getElementById("total");
+
+db.ref("acessos_antigos").on("value", (snapshot) => {
+  lista.innerHTML = "";
+
+  let total = 0;
+
+  snapshot.forEach((child) => {
+    total++;
+
+    const data = child.val();
+
+    const div = document.createElement("div");
+    div.className = "card";
+
+    div.innerHTML = `
+      <div><strong>📅 Data:</strong> ${data.data || "—"}</div>
+      <div class="small">🖥️ ${data.dispositivo}</div>
+      <div class="small">⏱️ ${data.timestamp || ""}</div>
+    `;
+
+    lista.prepend(div);
+  });
+
+  totalDiv.innerHTML = `<h2>Total de acessos: ${total}</h2>`;
+});
+</script>
+
+</body>
+</html>
