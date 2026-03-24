@@ -2,6 +2,7 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Painel de Acessos</title>
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -9,36 +10,71 @@
 
   <style>
     body {
-      font-family: Arial;
+      font-family: Arial, sans-serif;
       background: #0f172a;
       color: white;
-      padding: 20px;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      background: #020617;
+      padding: 15px;
+      border-bottom: 1px solid #334155;
+      z-index: 10;
     }
 
     h1 {
-      margin-bottom: 20px;
+      font-size: 18px;
+      margin: 0;
+    }
+
+    #total {
+      font-size: 14px;
+      color: #94a3b8;
+      margin-top: 5px;
+    }
+
+    .container {
+      padding: 10px;
     }
 
     .card {
       background: #1e293b;
-      padding: 15px;
-      border-radius: 10px;
+      padding: 12px;
+      border-radius: 12px;
       margin-bottom: 10px;
       border: 1px solid #334155;
     }
 
+    .data {
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
     .small {
       color: #94a3b8;
-      font-size: 12px;
+      font-size: 11px;
+      word-break: break-all;
+    }
+
+    .device {
+      margin-top: 5px;
     }
   </style>
 </head>
 <body>
 
-<h1>📊 Acessos ao Link Antigo</h1>
+<header>
+  <h1>📊 Acessos ao Link Antigo</h1>
+  <div id="total">Carregando...</div>
+</header>
 
-<div id="total"></div>
-<div id="lista"></div>
+<div class="container">
+  <div id="lista"></div>
+</div>
 
 <script>
 const firebaseConfig = {
@@ -71,15 +107,15 @@ db.ref("acessos_antigos").on("value", (snapshot) => {
     div.className = "card";
 
     div.innerHTML = `
-      <div><strong>📅 Data:</strong> ${data.data || "—"}</div>
-      <div class="small">🖥️ ${data.dispositivo}</div>
+      <div class="data">📅 ${data.data || "—"}</div>
       <div class="small">⏱️ ${data.timestamp || ""}</div>
+      <div class="small device">📱 ${data.dispositivo}</div>
     `;
 
     lista.prepend(div);
   });
 
-  totalDiv.innerHTML = `<h2>Total de acessos: ${total}</h2>`;
+  totalDiv.innerText = `Total: ${total} acessos`;
 });
 </script>
 
