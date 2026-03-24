@@ -5,14 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Painel de Acessos</title>
 
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: Arial;
       background: #0f172a;
       color: white;
       margin: 0;
@@ -82,7 +81,7 @@
 </div>
 
 <script>
-// 🔹 Firebase 1 (Realtime DB - lar-data)
+// 🔹 Firebase 1 (Realtime DB)
 const app1 = firebase.initializeApp({
   apiKey: "AIzaSyAiwLZG2g_3S7pLkdXQtYqz14rTgd1FPOg",
   authDomain: "meudiario-59cba.firebaseapp.com",
@@ -92,7 +91,7 @@ const app1 = firebase.initializeApp({
 
 const db1 = app1.database();
 
-// 🔹 Firebase 2 (Firestore - perfect-eye)
+// 🔹 Firebase 2 (Firestore)
 const app2 = firebase.initializeApp({
   apiKey: "AIzaSyAgN8SgLnyTJFTcTmKFla6TbqL3Bki2rak",
   authDomain: "peye-22c34.firebaseapp.com",
@@ -106,14 +105,20 @@ const totalDiv = document.getElementById("total");
 
 let total = 0;
 
-// 🔥 função única de render
+// 🔥 CONVERTER DATA PRA PT-BR
+function formatarData(dataISO) {
+  if (!dataISO) return "—";
+  return new Date(dataISO).toLocaleString("pt-BR");
+}
+
+// 🔥 render
 function render(data, origem) {
   const div = document.createElement("div");
   div.className = "card";
 
   div.innerHTML = `
     <div class="tag">${origem}</div>
-    <div class="data">📅 ${data.data || "—"}</div>
+    <div class="data">📅 ${formatarData(data.data)}</div>
     <div class="small">⏱️ ${data.timestamp || ""}</div>
     <div class="small">📱 ${data.dispositivo || ""}</div>
   `;
@@ -121,14 +126,14 @@ function render(data, origem) {
   lista.prepend(div);
 }
 
-// 🔹 LER Realtime DB
+// 🔹 Realtime DB
 db1.ref("acessos_antigos").on("child_added", (snap) => {
   total++;
   render(snap.val(), "lar-data");
   totalDiv.innerText = `Total: ${total} acessos`;
 });
 
-// 🔹 LER Firestore
+// 🔹 Firestore
 db2.collection("acessos_eye").onSnapshot((snapshot) => {
   snapshot.docChanges().forEach((change) => {
     if (change.type === "added") {
