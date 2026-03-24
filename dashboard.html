@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Painel de Acessos</title>
 
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
   <style>
     body {
@@ -14,7 +16,6 @@
       background: #0f172a;
       color: white;
       margin: 0;
-      padding: 0;
     }
 
     header {
@@ -23,7 +24,6 @@
       background: #020617;
       padding: 15px;
       border-bottom: 1px solid #334155;
-      z-index: 10;
     }
 
     h1 {
@@ -49,9 +49,17 @@
       border: 1px solid #334155;
     }
 
+    .tag {
+      font-size: 10px;
+      background: #334155;
+      padding: 2px 6px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-bottom: 5px;
+    }
+
     .data {
       font-size: 14px;
-      margin-bottom: 5px;
     }
 
     .small {
@@ -59,16 +67,13 @@
       font-size: 11px;
       word-break: break-all;
     }
-
-    .device {
-      margin-top: 5px;
-    }
   </style>
 </head>
+
 <body>
 
 <header>
-  <h1>📊 Acessos ao Link Antigo</h1>
+  <h1>📊 Painel Geral</h1>
   <div id="total">Carregando...</div>
 </header>
 
@@ -77,45 +82,61 @@
 </div>
 
 <script>
-const firebaseConfig = {
+// 🔹 Firebase 1 (Realtime DB - lar-data)
+const app1 = firebase.initializeApp({
   apiKey: "AIzaSyAiwLZG2g_3S7pLkdXQtYqz14rTgd1FPOg",
   authDomain: "meudiario-59cba.firebaseapp.com",
   databaseURL: "https://meudiario-59cba-default-rtdb.firebaseio.com",
-  projectId: "meudiario-59cba",
-  storageBucket: "meudiario-59cba.firebasestorage.app",
-  messagingSenderId: "426502564208",
-  appId: "1:426502564208:web:07839ac5ffd480f95547b5"
-};
+  projectId: "meudiario-59cba"
+}, "app1");
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+const db1 = app1.database();
+
+// 🔹 Firebase 2 (Firestore - perfect-eye)
+const app2 = firebase.initializeApp({
+  apiKey: "AIzaSyAgN8SgLnyTJFTcTmKFla6TbqL3Bki2rak",
+  authDomain: "peye-22c34.firebaseapp.com",
+  projectId: "peye-22c34"
+}, "app2");
+
+const db2 = app2.firestore();
 
 const lista = document.getElementById("lista");
 const totalDiv = document.getElementById("total");
 
-db.ref("acessos_antigos").on("value", (snapshot) => {
-  lista.innerHTML = "";
+let total = 0;
 
-  let total = 0;
+// 🔥 função única de render
+function render(data, origem) {
+  const div = document.createElement("div");
+  div.className = "card";
 
-  snapshot.forEach((child) => {
-    total++;
+  div.innerHTML = `
+    <div class="tag">${origem}</div>
+    <div class="data">📅 ${data.data || "—"}</div>
+    <div class="small">⏱️ ${data.timestamp || ""}</div>
+    <div class="small">📱 ${data.dispositivo || ""}</div>
+  `;
 
-    const data = child.val();
+  lista.prepend(div);
+}
 
-    const div = document.createElement("div");
-    div.className = "card";
-
-    div.innerHTML = `
-      <div class="data">📅 ${data.data || "—"}</div>
-      <div class="small">⏱️ ${data.timestamp || ""}</div>
-      <div class="small device">📱 ${data.dispositivo}</div>
-    `;
-
-    lista.prepend(div);
-  });
-
+// 🔹 LER Realtime DB
+db1.ref("acessos_antigos").on("child_added", (snap) => {
+  total++;
+  render(snap.val(), "lar-data");
   totalDiv.innerText = `Total: ${total} acessos`;
+});
+
+// 🔹 LER Firestore
+db2.collection("acessos_eye").onSnapshot((snapshot) => {
+  snapshot.docChanges().forEach((change) => {
+    if (change.type === "added") {
+      total++;
+      render(change.doc.data(), "perfect-eye");
+      totalDiv.innerText = `Total: ${total} acessos`;
+    }
+  });
 });
 </script>
 
