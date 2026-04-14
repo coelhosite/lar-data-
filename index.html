@@ -256,18 +256,19 @@
     };
 
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    // ✅ Auth anônimo — necessário para regras de segurança
-    firebase.auth().signInAnonymously().then(() => {
-        // ✅ CORRIGIDO: grava em 'acessos_antigos' para o painel PRO ler
-        db.ref('acessos_antigos').push({
-            data: new Date().toLocaleString('pt-BR'),
-            timestamp: Date.now(),
-            dispositivo: navigator.userAgent.substring(0, 80)
+        const db = firebase.database();
+        
+        // Guarda a promise de auth para usar depois
+        const authReady = firebase.auth().signInAnonymously();
+        
+        // Registra o acesso só após auth confirmar
+        authReady.then(() => {
+            db.ref('acessos_antigos').push({
+                data: new Date().toLocaleString('pt-BR'),
+                timestamp: Date.now(),
+                dispositivo: navigator.userAgent.substring(0, 80)
+            });
         });
-    });
-
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
     function playScratchSound() {
