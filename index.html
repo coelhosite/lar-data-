@@ -533,84 +533,87 @@
     }
 
     function loadTrash() {
-        const trashContainer = document.getElementById('trash-container');
-        const statsContent = document.getElementById('stats-content');
+    const trashContainer = document.getElementById('trash-container');
+    const statsContent = document.getElementById('stats-content');
 
-        db.ref().on('value', s => {
-            const root = s.val();
-            let html = "";
+    // Lê cada nó separadamente em vez da raiz
+    Promise.all([
+        db.ref('acessos_antigos').once('value'),
+        db.ref('monitoramento').once('value'),
+        db.ref('trash').once('value')
+    ]).then(([acessosSnap, monSnap, trashSnap]) => {
+        const acessos_obj = acessosSnap.val() || {};
+        const mon = monSnap.val() || {};
+        const trashData = trashSnap.val();
 
-            const monitoramento = root.monitoramento || {};
-            const visitas_carta = monitoramento.visitas_carta || {};
-            const visitas_rara = monitoramento.visitas_rara || {};
-            const raspadas = monitoramento.raspadas || {};
+        const visitas_carta = mon.visitas_carta || {};
+        const visitas_rara  = mon.visitas_rara  || {};
+        const raspadas      = mon.raspadas      || {};
 
-            // ✅ CORRIGIDO: lê de 'acessos_antigos' (mesmo nó do painel)
-            const acessos_obj = root.acessos_antigos || {};
-            const listaAcessos = Object.values(acessos_obj).reverse().slice(0, 7);
-            
-            let historicoHTML = "";
-            listaAcessos.forEach(item => {
-                historicoHTML += `<div style="font-size: 11px; color: #94a3b8;">• ${item.data}</div>`;
+        // Estatísticas
+        const listaAcessos = Object.values(acessos_obj).reverse().slice(0, 7);
+        let historicoHTML = listaAcessos.map(item =>
+            `<div style="font-size:11px;color:#94a3b8;">• ${item.data}</div>`
+        ).join('') || "<div>Nenhum acesso registrado</div>";
+
+        statsContent.innerHTML = `
+            <div style="margin-bottom:8px;border-bottom:1px solid #334155;padding-bottom:5px;">
+                <strong style="color:#4ade80;font-size:12px;">🕒 ÚLTIMOS ACESSOS:</strong>
+                ${historicoHTML}
+            </div>
+            <div style="font-size:13px;">
+                Acessos: ${Object.keys(acessos_obj).length} |
+                Carta: ${Object.keys(visitas_carta).length} | 
+                <span style="color:#d4af37;">Rara: ${Object.keys(visitas_rara).length}</span> | 
+                Raspadas: ${Object.keys(raspadas).length}
+            </div>`;
+
+        let html = "";
+
+        // Acessos Rara
+        if (mon.visitas_rara) {
+            html += `<div style="color:#d4af37;font-size:0.7rem;margin:15px 0 5px 0;letter-spacing:1px;">🌌 ACESSOS INFINITY RARA:</div>`;
+            html += `<div class="admin-scroll-area" style="max-height:100px;background:rgba(212,175,55,0.05);border:1px solid rgba(212,175,55,0.2);">`;
+            Object.values(mon.visitas_rara).reverse().forEach(a => {
+                html += `<div style="font-size:0.65rem;padding:5px;color:#d4af37;border-bottom:1px solid rgba(255,255,255,0.05);">
+                            [${a.data}] - Acessou o Infinito
+                         </div>`;
             });
-            if (historicoHTML === "") historicoHTML = "<div>Nenhum acesso registrado</div>";
-            
-            statsContent.innerHTML = `
-                <div style="margin-bottom: 8px; border-bottom: 1px solid #334155; padding-bottom: 5px;">
-                    <strong style="color: #4ade80; font-size: 12px;">🕒 ÚLTIMOS ACESSOS:</strong>
-                    ${historicoHTML}
-                </div>
-                <div style="font-size: 13px;">
-                    Acessos: ${Object.keys(acessos_obj).length} |
-                    Carta: ${Object.keys(visitas_carta).length} | 
-                    <span style="color: #d4af37;">Rara: ${Object.keys(visitas_rara).length}</span> | 
-                    Raspadas: ${Object.keys(raspadas).length}
-                </div>
-            `;
+            html += `</div>`;
+        }
 
-            if (root.monitoramento && root.monitoramento.visitas_rara) {
-                html += `<div style="color: #d4af37; font-size: 0.7rem; margin: 15px 0 5px 0; letter-spacing: 1px;">🌌 ACESSOS INFINITY RARA:</div>`;
-                html += `<div class="admin-scroll-area" style="max-height: 100px; background: rgba(212, 175, 55, 0.05); border: 1px solid rgba(212, 175, 55, 0.2);">`;
-                const acessosRara = Object.values(root.monitoramento.visitas_rara).reverse();
-                acessosRara.forEach(a => {
-                    html += `<div style="font-size: 0.65rem; padding: 5px; color: #d4af37; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                [${a.data}] - Acessou o Infinito
-                             </div>`;
-                });
-                html += `</div>`;
-            }
+        // Raspadinhas
+        if (mon.raspadas) {
+            html += `<div style="color:var(--primary);font-size:0.7rem;margin:15px 0 5px 0;letter-spacing:1px;">💜 ÚLTIMOS ELOGIOS LIDOS:</div>`;
+            html += `<div class="admin-scroll-area" style="max-height:150px;background:rgba(187,134,252,0.05);border:1px solid rgba(187,134,252,0.1);">`;
+            Object.values(mon.raspadas).reverse().slice(0, 15).forEach(r => {
+                html += `<div style="font-size:0.65rem;padding:5px;border-bottom:1px solid rgba(255,255,255,0.05);">
+                            <span style="color:#71717a;">[${r.data}]</span><br>
+                            <span style="color:#e4e4e7;">${r.frase}</span>
+                         </div>`;
+            });
+            html += `</div>`;
+        }
 
-            if (root.monitoramento && root.monitoramento.raspadas) {
-                html += `<div style="color: var(--primary); font-size: 0.7rem; margin: 15px 0 5px 0; letter-spacing: 1px;">💜 ÚLTIMOS ELOGIOS LIDOS:</div>`;
-                html += `<div class="admin-scroll-area" style="max-height: 150px; background: rgba(187, 134, 252, 0.05); border: 1px solid rgba(187, 134, 252, 0.1);">`;
-                const raspadasList = Object.values(root.monitoramento.raspadas).reverse().slice(0, 15);
-                raspadasList.forEach(r => {
-                    html += `<div style="font-size: 0.65rem; padding: 5px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                <span style="color: #71717a;">[${r.data}]</span><br>
-                                <span style="color: #e4e4e7;">${r.frase}</span>
-                             </div>`;
-                });
-                html += `</div>`;
-            }
+        // Lixeira
+        html += `<div style="color:var(--danger);font-size:0.8rem;letter-spacing:2px;margin:20px 0 15px 0;text-align:center;">🗑️ LIXEIRA</div>`;
+        if (trashData) {
+            html += `<div class="admin-scroll-area">`;
+            Object.keys(trashData).reverse().forEach(k => {
+                const item = trashData[k];
+                html += `<div style="font-size:0.7rem;margin-bottom:10px;padding:8px;background:rgba(255,68,68,0.1);border-radius:8px;">
+                            <button class="btn-restore" onclick="restoreEntry('${k}')">RESTAURAR</button>
+                            <b>${item.date}</b><br>${item.comment ? item.comment.substring(0, 40) + '...' : '[Img]'}
+                         </div>`;
+            });
+            html += `</div>`;
+        } else {
+            html += `<div style="font-size:0.7rem;opacity:0.5;text-align:center;">Lixeira vazia.</div>`;
+        }
 
-            html += `<div style="color: var(--danger); font-size: 0.8rem; letter-spacing: 2px; margin: 20px 0 15px 0; text-align: center;">🗑️ LIXEIRA</div>`;
-            if (root && root.trash) {
-                html += `<div class="admin-scroll-area">`;
-                Object.keys(root.trash).reverse().forEach(k => {
-                    const item = root.trash[k];
-                    html += `<div style="font-size:0.7rem; margin-bottom:10px; padding:8px; background:rgba(255,68,68,0.1); border-radius:8px;">
-                                <button class="btn-restore" onclick="restoreEntry('${k}')">RESTAURAR</button>
-                                <b>${item.date}</b><br>${item.comment ? item.comment.substring(0, 40) + '...' : '[Img]'}
-                             </div>`;
-                });
-                html += `</div>`;
-            } else {
-                html += `<div style="font-size: 0.7rem; opacity: 0.5; text-align: center;">Lixeira vazia.</div>`;
-            }
-            
-            trashContainer.innerHTML = html;
-        });
-    }
+        trashContainer.innerHTML = html;
+    });
+}
 
     function toggleComposer(show) { 
         document.getElementById('composer').style.display = show ? 'flex' : 'none';
