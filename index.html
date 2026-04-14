@@ -256,19 +256,19 @@
     };
 
     firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        
-        // Guarda a promise de auth para usar depois
-        const authReady = firebase.auth().signInAnonymously();
-        
-        // Registra o acesso só após auth confirmar
-        authReady.then(() => {
-            db.ref('acessos_antigos').push({
-                data: new Date().toLocaleString('pt-BR'),
-                timestamp: Date.now(),
-                dispositivo: navigator.userAgent.substring(0, 80)
-            });
+    const db = firebase.database();
+
+    // ✅ authReady: promise reutilizável — garante auth antes de qualquer leitura/escrita
+    const authReady = firebase.auth().signInAnonymously();
+
+    authReady.then(() => {
+        db.ref('acessos_antigos').push({
+            data: new Date().toLocaleString('pt-BR'),
+            timestamp: Date.now(),
+            dispositivo: navigator.userAgent.substring(0, 80)
         });
+    });
+
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
     function playScratchSound() {
@@ -487,14 +487,20 @@
                 confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#bb86fc', '#7c3aed', '#ffffff'] });
                 document.getElementById('home-screen').style.display = 'none';
                 document.getElementById('diary-content').style.display = 'block';
-                initScratchCard();
-                loadEntries();
+                // ✅ Espera auth antes de carregar — resolve problema no mobile
+                authReady.then(() => {
+                    initScratchCard();
+                    loadEntries();
+                });
             } else if (senha === "7454") { 
                 document.getElementById('home-screen').style.display = 'none';
                 document.getElementById('diary-content').style.display = 'block';
                 document.getElementById('trash-section').style.display = 'block';
-                loadEntries();
-                loadTrash();
+                // ✅ Espera auth antes de carregar — resolve problema no mobile
+                authReady.then(() => {
+                    loadEntries();
+                    loadTrash();
+                });
             } else if (senha) alert("Incorreto.");
         }
     }
@@ -534,87 +540,95 @@
     }
 
     function loadTrash() {
-    const trashContainer = document.getElementById('trash-container');
-    const statsContent = document.getElementById('stats-content');
+        const trashContainer = document.getElementById('trash-container');
+        const statsContent = document.getElementById('stats-content');
 
-    // Lê cada nó separadamente em vez da raiz
-    Promise.all([
-        db.ref('acessos_antigos').once('value'),
-        db.ref('monitoramento').once('value'),
-        db.ref('trash').once('value')
-    ]).then(([acessosSnap, monSnap, trashSnap]) => {
-        const acessos_obj = acessosSnap.val() || {};
-        const mon = monSnap.val() || {};
-        const trashData = trashSnap.val();
+        // ✅ Lê cada nó separadamente — evita erro de permissão na raiz
+        function atualizar() {
+            Promise.all([
+                db.ref('acessos_antigos').once('value'),
+                db.ref('monitoramento').once('value'),
+                db.ref('trash').once('value')
+            ]).then(([acessosSnap, monSnap, trashSnap]) => {
+                const acessos_obj = acessosSnap.val() || {};
+                const mon         = monSnap.val()     || {};
+                const trashData   = trashSnap.val();
 
-        const visitas_carta = mon.visitas_carta || {};
-        const visitas_rara  = mon.visitas_rara  || {};
-        const raspadas      = mon.raspadas      || {};
+                const visitas_carta = mon.visitas_carta || {};
+                const visitas_rara  = mon.visitas_rara  || {};
+                const raspadas      = mon.raspadas      || {};
 
-        // Estatísticas
-        const listaAcessos = Object.values(acessos_obj).reverse().slice(0, 7);
-        let historicoHTML = listaAcessos.map(item =>
-            `<div style="font-size:11px;color:#94a3b8;">• ${item.data}</div>`
-        ).join('') || "<div>Nenhum acesso registrado</div>";
+                // Estatísticas
+                const listaAcessos = Object.values(acessos_obj).reverse().slice(0, 7);
+                let historicoHTML = listaAcessos.map(item =>
+                    `<div style="font-size:11px;color:#94a3b8;">• ${item.data}</div>`
+                ).join('') || "<div>Nenhum acesso registrado</div>";
 
-        statsContent.innerHTML = `
-            <div style="margin-bottom:8px;border-bottom:1px solid #334155;padding-bottom:5px;">
-                <strong style="color:#4ade80;font-size:12px;">🕒 ÚLTIMOS ACESSOS:</strong>
-                ${historicoHTML}
-            </div>
-            <div style="font-size:13px;">
-                Acessos: ${Object.keys(acessos_obj).length} |
-                Carta: ${Object.keys(visitas_carta).length} | 
-                <span style="color:#d4af37;">Rara: ${Object.keys(visitas_rara).length}</span> | 
-                Raspadas: ${Object.keys(raspadas).length}
-            </div>`;
+                statsContent.innerHTML = `
+                    <div style="margin-bottom:8px;border-bottom:1px solid #334155;padding-bottom:5px;">
+                        <strong style="color:#4ade80;font-size:12px;">🕒 ÚLTIMOS ACESSOS:</strong>
+                        ${historicoHTML}
+                    </div>
+                    <div style="font-size:13px;">
+                        Acessos: ${Object.keys(acessos_obj).length} |
+                        Carta: ${Object.keys(visitas_carta).length} | 
+                        <span style="color:#d4af37;">Rara: ${Object.keys(visitas_rara).length}</span> | 
+                        Raspadas: ${Object.keys(raspadas).length}
+                    </div>`;
 
-        let html = "";
+                let html = "";
 
-        // Acessos Rara
-        if (mon.visitas_rara) {
-            html += `<div style="color:#d4af37;font-size:0.7rem;margin:15px 0 5px 0;letter-spacing:1px;">🌌 ACESSOS INFINITY RARA:</div>`;
-            html += `<div class="admin-scroll-area" style="max-height:100px;background:rgba(212,175,55,0.05);border:1px solid rgba(212,175,55,0.2);">`;
-            Object.values(mon.visitas_rara).reverse().forEach(a => {
-                html += `<div style="font-size:0.65rem;padding:5px;color:#d4af37;border-bottom:1px solid rgba(255,255,255,0.05);">
-                            [${a.data}] - Acessou o Infinito
-                         </div>`;
+                // Acessos Rara
+                if (mon.visitas_rara) {
+                    html += `<div style="color:#d4af37;font-size:0.7rem;margin:15px 0 5px 0;letter-spacing:1px;">🌌 ACESSOS INFINITY RARA:</div>`;
+                    html += `<div class="admin-scroll-area" style="max-height:100px;background:rgba(212,175,55,0.05);border:1px solid rgba(212,175,55,0.2);">`;
+                    Object.values(mon.visitas_rara).reverse().forEach(a => {
+                        html += `<div style="font-size:0.65rem;padding:5px;color:#d4af37;border-bottom:1px solid rgba(255,255,255,0.05);">
+                                    [${a.data}] - Acessou o Infinito
+                                 </div>`;
+                    });
+                    html += `</div>`;
+                }
+
+                // Raspadinhas
+                if (mon.raspadas) {
+                    html += `<div style="color:var(--primary);font-size:0.7rem;margin:15px 0 5px 0;letter-spacing:1px;">💜 ÚLTIMOS ELOGIOS LIDOS:</div>`;
+                    html += `<div class="admin-scroll-area" style="max-height:150px;background:rgba(187,134,252,0.05);border:1px solid rgba(187,134,252,0.1);">`;
+                    Object.values(mon.raspadas).reverse().slice(0, 15).forEach(r => {
+                        html += `<div style="font-size:0.65rem;padding:5px;border-bottom:1px solid rgba(255,255,255,0.05);">
+                                    <span style="color:#71717a;">[${r.data}]</span><br>
+                                    <span style="color:#e4e4e7;">${r.frase}</span>
+                                 </div>`;
+                    });
+                    html += `</div>`;
+                }
+
+                // Lixeira
+                html += `<div style="color:var(--danger);font-size:0.8rem;letter-spacing:2px;margin:20px 0 15px 0;text-align:center;">🗑️ LIXEIRA</div>`;
+                if (trashData) {
+                    html += `<div class="admin-scroll-area">`;
+                    Object.keys(trashData).reverse().forEach(k => {
+                        const item = trashData[k];
+                        html += `<div style="font-size:0.7rem;margin-bottom:10px;padding:8px;background:rgba(255,68,68,0.1);border-radius:8px;">
+                                    <button class="btn-restore" onclick="restoreEntry('${k}')">RESTAURAR</button>
+                                    <b>${item.date}</b><br>${item.comment ? item.comment.substring(0, 40) + '...' : '[Img]'}
+                                 </div>`;
+                    });
+                    html += `</div>`;
+                } else {
+                    html += `<div style="font-size:0.7rem;opacity:0.5;text-align:center;">Lixeira vazia.</div>`;
+                }
+
+                trashContainer.innerHTML = html;
+            }).catch(err => {
+                statsContent.innerHTML = `<span style="color:var(--danger)">Erro: ${err.message}</span>`;
             });
-            html += `</div>`;
         }
 
-        // Raspadinhas
-        if (mon.raspadas) {
-            html += `<div style="color:var(--primary);font-size:0.7rem;margin:15px 0 5px 0;letter-spacing:1px;">💜 ÚLTIMOS ELOGIOS LIDOS:</div>`;
-            html += `<div class="admin-scroll-area" style="max-height:150px;background:rgba(187,134,252,0.05);border:1px solid rgba(187,134,252,0.1);">`;
-            Object.values(mon.raspadas).reverse().slice(0, 15).forEach(r => {
-                html += `<div style="font-size:0.65rem;padding:5px;border-bottom:1px solid rgba(255,255,255,0.05);">
-                            <span style="color:#71717a;">[${r.data}]</span><br>
-                            <span style="color:#e4e4e7;">${r.frase}</span>
-                         </div>`;
-            });
-            html += `</div>`;
-        }
-
-        // Lixeira
-        html += `<div style="color:var(--danger);font-size:0.8rem;letter-spacing:2px;margin:20px 0 15px 0;text-align:center;">🗑️ LIXEIRA</div>`;
-        if (trashData) {
-            html += `<div class="admin-scroll-area">`;
-            Object.keys(trashData).reverse().forEach(k => {
-                const item = trashData[k];
-                html += `<div style="font-size:0.7rem;margin-bottom:10px;padding:8px;background:rgba(255,68,68,0.1);border-radius:8px;">
-                            <button class="btn-restore" onclick="restoreEntry('${k}')">RESTAURAR</button>
-                            <b>${item.date}</b><br>${item.comment ? item.comment.substring(0, 40) + '...' : '[Img]'}
-                         </div>`;
-            });
-            html += `</div>`;
-        } else {
-            html += `<div style="font-size:0.7rem;opacity:0.5;text-align:center;">Lixeira vazia.</div>`;
-        }
-
-        trashContainer.innerHTML = html;
-    });
-}
+        atualizar();
+        // ✅ Atualiza automaticamente a cada 30s para refletir novos acessos
+        setInterval(atualizar, 30000);
+    }
 
     function toggleComposer(show) { 
         document.getElementById('composer').style.display = show ? 'flex' : 'none';
